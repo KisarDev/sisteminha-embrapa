@@ -1,0 +1,25 @@
+# Use postgres/password credentials
+
+services:
+
+  db:
+    image: postgres:14.23-alpine3.24
+    restart: always
+    shm_size: 128mb
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: sisteminha_embrapa
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:

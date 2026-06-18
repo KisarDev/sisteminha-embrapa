@@ -4,6 +4,7 @@ import { Card } from "@/src/components/ui/Card";
 const modules = [
   { title: "Autenticação", description: "Cadastro, login, logout e perfil." },
   { title: "IoT", description: "Leitura simulada/real via IIotProvider com histórico." },
+  { title: "Dashboard", description: "Resumo dos sensores com médias, mínimas, máximas e alertas ativos." },
   { title: "Registros", description: "CRUD de registros manuais com soft delete." },
   { title: "Calculator", description: "Escalonamento de produção extensível por cultura." },
   { title: "CMS", description: "Aulas e documentação com rotas dinâmicas." },
@@ -27,6 +28,9 @@ export default function Home() {
       </section>
 
       <section className="flex flex-wrap gap-4 text-sm">
+        <Link className="text-[var(--color-primary)] underline" href="/dashboard">
+          Dashboard operacional
+        </Link>
         <Link className="text-[var(--color-primary)] underline" href="/aulas/exemplo-aula">
           Exemplo de rota de aula
         </Link>

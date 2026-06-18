@@ -1,6 +1,7 @@
 import { SensorType } from "@prisma/client";
 import { IIotProvider } from "@/src/modules/iot/interfaces/IIotProvider";
-import { PrismaSensorReadingRepository } from "@/src/modules/iot/repositories/PrismaSensorReadingRepository";
+import { ISensorReadingRepository } from "@/src/modules/iot/interfaces/ISensorReadingRepository";
+import { AlertService } from "@/src/modules/iot/services/AlertService";
 
 export const DEFAULT_SENSOR_TYPES: SensorType[] = [
   "CHICKEN_TEMPERATURE",
@@ -19,14 +20,19 @@ export const DEFAULT_SENSOR_TYPES: SensorType[] = [
 export class IotIngestionService {
   constructor(
     private readonly provider: IIotProvider,
-    private readonly sensorReadingRepository: PrismaSensorReadingRepository,
+    private readonly sensorReadingRepository: ISensorReadingRepository,
+    private readonly alertService: AlertService,
   ) {}
 
   async ingest(sensorTypes = DEFAULT_SENSOR_TYPES) {
     const created = [];
     for (const sensorType of sensorTypes) {
       const reading = await this.provider.getReading(sensorType);
-      created.push(await this.sensorReadingRepository.create(reading));
+      const savedReading = await this.sensorReadingRepository.create(reading);
+      created.push(savedReading);
+
+      // Check thresholds and generate alerts automatically
+      await this.alertService.checkThresholds(savedReading);
     }
     return created;
   }
