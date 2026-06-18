@@ -9,7 +9,10 @@
     "lint": "next lint",
     "test": "tsx --test src/**/*.test.ts",
     "prisma:generate": "prisma generate",
+    "prisma:generate:docker": "docker run --rm -v \"$PWD\":/app -w /app --network host node:20-alpine sh -lc 'npx prisma generate'",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:docker": "docker run --rm -v \"$PWD\":/app -w /app --network host node:20-alpine sh -lc 'npx prisma migrate dev'",
+    "prisma:migrate:reset:docker": "docker run --rm -v \"$PWD\":/app -w /app --network host node:20-alpine sh -lc 'npx prisma migrate reset --force'",
     "prisma:seed": "prisma db seed"
   },
   "dependencies": {
