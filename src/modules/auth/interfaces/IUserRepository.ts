@@ -15,6 +15,7 @@ export type UpdateProfileInput = {
 export interface IUserRepository {
   findByEmail(email: string): Promise<User | null>;
   findById(id: string): Promise<User | null>;
+  findMany(): Promise<User[]>;
   create(input: CreateUserInput): Promise<User>;
   updateProfile(userId: string, input: UpdateProfileInput): Promise<User>;
   softDelete(userId: string): Promise<void>;

@@ -66,4 +66,8 @@ export class AuthService {
 
     await this.userRepository.softDelete(userId);
   }
+
+  async listUsers() {
+    return this.userRepository.findMany();
+  }
 }

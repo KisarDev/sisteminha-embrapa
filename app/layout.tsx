@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Header } from "@/src/components/navigation/Header";
+import { Footer } from "@/src/components/navigation/Footer";
 
 export const metadata: Metadata = {
   title: "Sistema Inteligente - Sisteminha Embrapa",
@@ -13,7 +15,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body className="flex min-h-screen flex-col">
+        <Header />
+        {children}
+        <Footer />
+      </body>
     </html>
   );
 }

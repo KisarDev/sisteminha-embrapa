@@ -10,6 +10,10 @@ export class PrismaUserRepository implements IUserRepository {
     return prisma.user.findFirst({ where: { id, isDeleted: false } });
   }
 
+  async findMany() {
+    return prisma.user.findMany({ where: { isDeleted: false }, orderBy: { createdAt: "desc" } });
+  }
+
   async create(input: CreateUserInput) {
     return prisma.user.create({ data: input });
   }

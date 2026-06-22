@@ -1,0 +1,215 @@
+"use client";
+
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Card } from "@/src/components/ui/Card";
+import { Input } from "@/src/components/ui/Input";
+import { Button } from "@/src/components/ui/Button";
+
+const RECORD_TYPES = [
+  { value: "CHICKEN_EGGS", label: "Ovos de galinha" },
+  { value: "QUAIL_EGGS", label: "Ovos de codorna" },
+  { value: "CHICKEN_FEED_CONVERSION", label: "Conversão alimentar (galinhas)" },
+  { value: "QUAIL_FEED_CONVERSION", label: "Conversão alimentar (codornas)" },
+  { value: "FISH_FEED_CONVERSION", label: "Conversão alimentar (peixes)" },
+  { value: "HUMUS_AMOUNT", label: "Quantidade de húmus" },
+  { value: "COMPOST_AMOUNT", label: "Quantidade de composto" },
+  { value: "FISH_HARVEST_AMOUNT", label: "Quantidade de peixes colhidos" },
+  { value: "SLAUGHTERED_BIRDS_AMOUNT", label: "Quantidade de aves abatidas" },
+  { value: "PLANTING_EVENT", label: "Evento de plantio" },
+  { value: "HARVEST_EVENT", label: "Evento de colheita" },
+  { value: "SEED_AMOUNT", label: "Quantidade de sementes" },
+  { value: "OBSERVATION", label: "Observação" },
+  { value: "FREE_NOTE", label: "Anotação livre" },
+] as const;
+
+type ManualRecord = {
+  id: string;
+  type: string;
+  quantity: number | null;
+  notes: string | null;
+  observedAt: string;
+  createdAt: string;
+};
+
+export default function ManualRecordsPage() {
+  const router = useRouter();
+  const [records, setRecords] = useState<ManualRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [type, setType] = useState("OBSERVATION");
+  const [quantity, setQuantity] = useState("");
+  const [notes, setNotes] = useState("");
+  const [observedAt, setObservedAt] = useState(new Date().toISOString().slice(0, 16));
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const fetchRecords = async () => {
+    const res = await fetch("/api/manual-records");
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
+    if (res.ok) {
+      setRecords(await res.json());
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchRecords();
+  }, []);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSubmitting(true);
+
+    const body: { type: string; observedAt: string; quantity?: number; notes?: string } = {
+      type,
+      observedAt: new Date(observedAt).toISOString(),
+    };
+    if (quantity) body.quantity = parseFloat(quantity);
+    if (notes) body.notes = notes;
+
+    const res = await fetch("/api/manual-records", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.message || "Erro ao criar registro.");
+      setSubmitting(false);
+      return;
+    }
+
+    setType("OBSERVATION");
+    setQuantity("");
+    setNotes("");
+    setObservedAt(new Date().toISOString().slice(0, 16));
+    setSubmitting(false);
+    fetchRecords();
+  };
+
+  const handleDelete = async (id: string) => {
+    const res = await fetch(`/api/manual-records/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setRecords((prev) => prev.filter((r) => r.id !== id));
+    }
+  };
+
+  const getTypeLabel = (typeValue: string) =>
+    RECORD_TYPES.find((t) => t.value === typeValue)?.label || typeValue;
+
+  return (
+    <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-6 pt-8">
+      <div>
+        <h1 className="text-2xl font-semibold text-[var(--color-text)]">Registros Manuais</h1>
+        <p className="mt-1 text-sm text-[var(--color-text-muted)]">Registre observações de produção do sisteminha.</p>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <h2 className="mb-4 text-lg font-medium text-[var(--color-text)]">Novo registro</h2>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {error && (
+              <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+            )}
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="type" className="text-sm font-medium text-[var(--color-text)]">Tipo</label>
+              <select
+                id="type"
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none"
+              >
+                {RECORD_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="quantity" className="text-sm font-medium text-[var(--color-text)]">
+                Quantidade <span className="text-[var(--color-text-muted)]">(opcional)</span>
+              </label>
+              <Input
+                id="quantity"
+                type="number"
+                step="any"
+                placeholder="Ex: 10"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="notes" className="text-sm font-medium text-[var(--color-text)]">
+                Anotações <span className="text-[var(--color-text-muted)]">(opcional)</span>
+              </label>
+              <textarea
+                id="notes"
+                rows={3}
+                placeholder="Observações sobre o registro"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="observedAt" className="text-sm font-medium text-[var(--color-text)]">Data</label>
+              <Input
+                id="observedAt"
+                type="datetime-local"
+                value={observedAt}
+                onChange={(e) => setObservedAt(e.target.value)}
+                required
+              />
+            </div>
+
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Salvando..." : "Registrar"}
+            </Button>
+          </form>
+        </Card>
+
+        <div className="flex flex-col gap-3">
+          <h2 className="text-lg font-medium text-[var(--color-text)]">Registros recentes</h2>
+          {loading ? (
+            <p className="text-sm text-[var(--color-text-muted)]">Carregando...</p>
+          ) : records.length === 0 ? (
+            <p className="text-sm text-[var(--color-text-muted)]">Nenhum registro encontrado.</p>
+          ) : (
+            records.map((record) => (
+              <Card key={record.id}>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-medium text-[var(--color-text)]">{getTypeLabel(record.type)}</p>
+                    {record.quantity !== null && (
+                      <p className="text-sm text-[var(--color-text-muted)]">Qtd: {record.quantity}</p>
+                    )}
+                    {record.notes && (
+                      <p className="mt-1 text-sm text-[var(--color-text-muted)]">{record.notes}</p>
+                    )}
+                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                      {new Date(record.observedAt).toLocaleString("pt-BR")}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleDelete(record.id)}
+                    className="shrink-0 text-sm text-red-600 transition hover:text-red-800"
+                  >
+                    Excluir
+                  </button>
+                </div>
+              </Card>
+            ))
+          )}
+        </div>
+      </div>
+    </main>
+  );
+}
