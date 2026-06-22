@@ -1,5 +1,6 @@
 import { SensorType, AlertSeverity, AlertType, SensorReading } from "@prisma/client";
 import { IAlertRepository } from "@/src/modules/iot/interfaces/IAlertRepository";
+import { IAlertService } from "@/src/modules/iot/interfaces/IAlertService";
 
 type ThresholdRule = {
   min?: number;
@@ -89,7 +90,7 @@ const THRESHOLDS: Record<SensorType, ThresholdRule> = {
   },
 };
 
-export class AlertService {
+export class AlertService implements IAlertService {
   constructor(private readonly alertRepository: IAlertRepository) {}
 
   async checkThresholds(reading: SensorReading, userId: string) {

@@ -16,22 +16,18 @@ import { PrismaManualRecordRepository } from "@/src/modules/users/repositories/P
 const userRepository = new PrismaUserRepository();
 const sensorReadingRepository = new PrismaSensorReadingRepository();
 const alertRepository = new PrismaAlertRepository();
+
 const alertService = new AlertService(alertRepository);
-const dashboardService = new DashboardService(sensorReadingRepository);
 const simulationIngestionService = new IotIngestionService(new SimulationIotProvider(), sensorReadingRepository, alertService);
 const realIngestionService = new IotIngestionService(new RealIotProvider(), sensorReadingRepository, alertService);
-const schedulerService = new SchedulerService(
-  simulationIngestionService,
-  realIngestionService,
-  userRepository,
-);
+const schedulerService = new SchedulerService(simulationIngestionService, userRepository);
 
 export const container = {
   authService: new AuthService(userRepository),
   sensorReadingRepository,
   alertRepository,
   alertService,
-  dashboardService,
+  dashboardService: new DashboardService(sensorReadingRepository),
   schedulerService,
   simulationIngestionService,
   realIngestionService,

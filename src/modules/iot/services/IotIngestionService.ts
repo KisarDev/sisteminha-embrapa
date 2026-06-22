@@ -1,7 +1,7 @@
 import { SensorType } from "@prisma/client";
 import { IIotProvider } from "@/src/modules/iot/interfaces/IIotProvider";
 import { ISensorReadingRepository } from "@/src/modules/iot/interfaces/ISensorReadingRepository";
-import { AlertService } from "@/src/modules/iot/services/AlertService";
+import { IAlertService } from "@/src/modules/iot/interfaces/IAlertService";
 
 export const DEFAULT_SENSOR_TYPES: SensorType[] = [
   "CHICKEN_TEMPERATURE",
@@ -21,7 +21,7 @@ export class IotIngestionService {
   constructor(
     private readonly provider: IIotProvider,
     private readonly sensorReadingRepository: ISensorReadingRepository,
-    private readonly alertService: AlertService,
+    private readonly alertService: IAlertService,
   ) {}
 
   async ingest(sensorTypes: SensorType[], userId: string) {
