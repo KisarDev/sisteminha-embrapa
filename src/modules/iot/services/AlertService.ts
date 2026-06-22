@@ -92,7 +92,7 @@ const THRESHOLDS: Record<SensorType, ThresholdRule> = {
 export class AlertService {
   constructor(private readonly alertRepository: IAlertRepository) {}
 
-  async checkThresholds(reading: SensorReading) {
+  async checkThresholds(reading: SensorReading, userId: string) {
     const rule = THRESHOLDS[reading.sensorType];
     if (!rule) return null;
 
@@ -108,6 +108,7 @@ export class AlertService {
         value: reading.value,
         threshold: rule.max,
         sensorReadingId: reading.id,
+        userId,
       });
       alerts.push(alert);
     }
@@ -122,6 +123,7 @@ export class AlertService {
         value: reading.value,
         threshold: rule.min,
         sensorReadingId: reading.id,
+        userId,
       });
       alerts.push(alert);
     }
@@ -129,11 +131,11 @@ export class AlertService {
     return alerts;
   }
 
-  async getActiveAlerts(sensorType?: SensorType) {
+  async getActiveAlerts(userId: string, sensorType?: SensorType) {
     if (sensorType) {
-      return this.alertRepository.findBySensorType(sensorType);
+      return this.alertRepository.findBySensorType(sensorType, userId);
     }
-    return this.alertRepository.findUnresolved();
+    return this.alertRepository.findUnresolved(userId);
   }
 
   async resolveAlert(alertId: string) {

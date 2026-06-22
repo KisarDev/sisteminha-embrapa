@@ -1,10 +1,11 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Card } from "@/src/components/ui/Card";
 import { Input } from "@/src/components/ui/Input";
 import { Button } from "@/src/components/ui/Button";
+import { api } from "@/src/lib/api";
+import { AuthGuard } from "@/src/components/auth/AuthGuard";
 
 type Doc = {
   id: string;
@@ -14,7 +15,7 @@ type Doc = {
   createdAt: string;
 };
 
-export default function AdminDocsPage() {
+function DocsContent() {
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
@@ -24,9 +25,11 @@ export default function AdminDocsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const fetchDocs = async () => {
-    const res = await fetch("/api/docs");
-    if (res.ok) {
-      setDocs(await res.json());
+    try {
+      const data = await api<Doc[]>("/api/docs");
+      setDocs(data);
+    } catch {
+      // api() handles errors
     }
     setLoading(false);
   };
@@ -40,24 +43,19 @@ export default function AdminDocsPage() {
     setError("");
     setSubmitting(true);
 
-    const res = await fetch("/api/docs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, description, content }),
-    });
-
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.message || "Erro ao criar documento.");
-      setSubmitting(false);
-      return;
+    try {
+      await api("/api/docs", {
+        method: "POST",
+        body: JSON.stringify({ title, description, content }),
+      });
+      setTitle("");
+      setDescription("");
+      setContent("");
+      fetchDocs();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao criar documento.");
     }
-
-    setTitle("");
-    setDescription("");
-    setContent("");
     setSubmitting(false);
-    fetchDocs();
   };
 
   return (
@@ -71,39 +69,22 @@ export default function AdminDocsPage() {
         <Card>
           <h2 className="mb-4 text-lg font-medium text-[var(--color-text)]">Nova página</h2>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {error && (
-              <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-            )}
+            {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
             <div className="flex flex-col gap-1.5">
               <label htmlFor="title" className="text-sm font-medium text-[var(--color-text)]">Título</label>
               <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
             </div>
-
             <div className="flex flex-col gap-1.5">
               <label htmlFor="description" className="text-sm font-medium text-[var(--color-text)]">Descrição</label>
-              <textarea
-                id="description"
-                rows={2}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                required
-                className="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none"
-              />
+              <textarea id="description" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} required
+                className="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none" />
             </div>
-
             <div className="flex flex-col gap-1.5">
               <label htmlFor="content" className="text-sm font-medium text-[var(--color-text)]">Conteúdo</label>
-              <textarea
-                id="content"
-                rows={6}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                required
-                className="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none"
-              />
+              <textarea id="content" rows={6} value={content} onChange={(e) => setContent(e.target.value)} required
+                className="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none" />
             </div>
-
             <Button type="submit" disabled={submitting}>
               {submitting ? "Criando..." : "Criar página"}
             </Button>
@@ -123,11 +104,7 @@ export default function AdminDocsPage() {
                   <p className="text-sm font-medium text-[var(--color-text)]">{doc.title}</p>
                   <p className="mt-1 text-xs text-[var(--color-text-muted)]">{doc.slug}</p>
                 </div>
-                <a
-                  href={`/docs/${doc.slug}`}
-                  target="_blank"
-                  className="mt-2 inline-block text-sm text-[var(--color-primary)] underline"
-                >
+                <a href={`/docs/${doc.slug}`} target="_blank" className="mt-2 inline-block text-sm text-[var(--color-primary)] underline">
                   Ver página
                 </a>
               </Card>
@@ -136,5 +113,13 @@ export default function AdminDocsPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function AdminDocsPage() {
+  return (
+    <AuthGuard>
+      <DocsContent />
+    </AuthGuard>
   );
 }

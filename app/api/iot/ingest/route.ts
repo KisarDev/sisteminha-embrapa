@@ -7,14 +7,14 @@ import { DEFAULT_SENSOR_TYPES } from "@/src/modules/iot/services/IotIngestionSer
 
 export async function POST(request: NextRequest) {
   try {
-    await requireRole([UserRole.SUPER_ADMIN]);
+    const session = await requireRole([UserRole.SUPER_ADMIN]);
     const payload = (await request.json().catch(() => ({}))) as {
       source?: "real" | "simulation";
       sensorTypes?: SensorType[];
     };
 
     const service = payload.source === "real" ? container.realIngestionService : container.simulationIngestionService;
-    const created = await service.ingest(payload.sensorTypes ?? DEFAULT_SENSOR_TYPES);
+    const created = await service.ingest(payload.sensorTypes ?? DEFAULT_SENSOR_TYPES, session.sub);
     return NextResponse.json({ count: created.length, data: created });
   } catch (error) {
     return handleHttpError(error);

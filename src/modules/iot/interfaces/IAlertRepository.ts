@@ -8,12 +8,13 @@ export type CreateAlertInput = {
   value: number;
   threshold: number;
   sensorReadingId?: string;
+  userId: string;
 };
 
 export interface IAlertRepository {
   create(input: CreateAlertInput): Promise<Alert>;
-  findUnresolved(limit?: number): Promise<Alert[]>;
-  findBySensorType(sensorType: SensorType, limit?: number): Promise<Alert[]>;
+  findUnresolved(userId: string, limit?: number): Promise<Alert[]>;
+  findBySensorType(sensorType: SensorType, userId: string, limit?: number): Promise<Alert[]>;
   findById(id: string): Promise<Alert | null>;
   markAsResolved(alertId: string): Promise<Alert>;
 }

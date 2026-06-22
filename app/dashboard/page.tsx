@@ -4,6 +4,8 @@ import { AlertBadge } from "@/src/components/dashboard/AlertBadge";
 import { SensorCard } from "@/src/components/dashboard/SensorCard";
 import { Card } from "@/src/components/ui/Card";
 import { container } from "@/src/core/di/container";
+import { readSession } from "@/src/core/http/auth";
+import { redirect } from "next/navigation";
 
 const sensorLabels: Record<SensorType, string> = {
   CHICKEN_TEMPERATURE: "Temperatura das galinhas",
@@ -20,9 +22,16 @@ const sensorLabels: Record<SensorType, string> = {
 };
 
 export default async function DashboardPage() {
+  let session;
+  try {
+    session = await readSession();
+  } catch {
+    redirect("/login");
+  }
+
   const [summary, alerts] = await Promise.all([
-    container.dashboardService.getSummary(),
-    container.alertService.getActiveAlerts(),
+    container.dashboardService.getSummary(session.sub),
+    container.alertService.getActiveAlerts(session.sub),
   ]);
 
   return (

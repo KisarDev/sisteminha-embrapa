@@ -1,7 +1,6 @@
 import { SensorType } from "@prisma/client";
 import {
   ISensorReadingRepository,
-  SensorReadingStats,
 } from "@/src/modules/iot/interfaces/ISensorReadingRepository";
 
 const ALL_SENSOR_TYPES: SensorType[] = [
@@ -29,23 +28,23 @@ export type HistoricalPeriod = keyof typeof PERIOD_IN_DAYS;
 export class DashboardService {
   constructor(private readonly sensorReadingRepository: ISensorReadingRepository) {}
 
-  async getStats(sensorType: SensorType, startDate?: Date, endDate?: Date): Promise<SensorReadingStats> {
-    return this.sensorReadingRepository.getStatsBySensorType(sensorType, startDate, endDate);
+  async getStats(sensorType: SensorType, userId: string, startDate?: Date, endDate?: Date) {
+    return this.sensorReadingRepository.getStatsBySensorType(sensorType, userId, startDate, endDate);
   }
 
-  async getHistoricalData(sensorType: SensorType, period: HistoricalPeriod) {
+  async getHistoricalData(sensorType: SensorType, userId: string, period: HistoricalPeriod) {
     const endDate = new Date();
     const startDate = new Date(endDate);
     startDate.setDate(endDate.getDate() - PERIOD_IN_DAYS[period]);
 
-    return this.sensorReadingRepository.findByDateRange(sensorType, startDate, endDate);
+    return this.sensorReadingRepository.findByDateRange(sensorType, userId, startDate, endDate);
   }
 
-  async getSummary() {
+  async getSummary(userId: string) {
     const summary = await Promise.all(
       ALL_SENSOR_TYPES.map(async (sensorType) => ({
         sensorType,
-        stats: await this.sensorReadingRepository.getStatsBySensorType(sensorType),
+        stats: await this.sensorReadingRepository.getStatsBySensorType(sensorType, userId),
       })),
     );
 

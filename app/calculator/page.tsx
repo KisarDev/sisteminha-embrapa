@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { Card } from "@/src/components/ui/Card";
 import { Input } from "@/src/components/ui/Input";
 import { Button } from "@/src/components/ui/Button";
+import { api } from "@/src/lib/api";
 
 const CROPS = [
   { value: "milho", label: "Milho" },
@@ -39,25 +40,20 @@ export default function CalculatorPage() {
     setResult(null);
     setLoading(true);
 
-    const res = await fetch("/api/calculator/production-scaling", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        crop,
-        desiredProduction: parseFloat(desiredProduction),
-        desiredQuantity: parseFloat(desiredQuantity),
-        periodInDays: parseInt(periodInDays, 10),
-      }),
-    });
-
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.message || "Erro ao calcular.");
-      setLoading(false);
-      return;
+    try {
+      const data = await api<Result>("/api/calculator/production-scaling", {
+        method: "POST",
+        body: JSON.stringify({
+          crop,
+          desiredProduction: parseFloat(desiredProduction),
+          desiredQuantity: parseFloat(desiredQuantity),
+          periodInDays: parseInt(periodInDays, 10),
+        }),
+      });
+      setResult(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao calcular.");
     }
-
-    setResult(await res.json());
     setLoading(false);
   };
 

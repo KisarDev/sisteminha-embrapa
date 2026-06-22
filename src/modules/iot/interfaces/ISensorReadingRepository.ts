@@ -11,9 +11,9 @@ export type SensorReadingStats = {
 };
 
 export interface ISensorReadingRepository {
-  create(input: SensorReadingInput): Promise<SensorReading>;
-  findBySensorType(sensorType: SensorType, limit?: number): Promise<SensorReading[]>;
-  findByDateRange(sensorType: SensorType, startDate: Date, endDate: Date): Promise<SensorReading[]>;
-  getStatsBySensorType(sensorType: SensorType, startDate?: Date, endDate?: Date): Promise<SensorReadingStats>;
-  getLatestBySensorType(sensorType: SensorType): Promise<SensorReading | null>;
+  create(input: SensorReadingInput & { userId: string }): Promise<SensorReading>;
+  findBySensorType(sensorType: SensorType, userId: string, limit?: number): Promise<SensorReading[]>;
+  findByDateRange(sensorType: SensorType, userId: string, startDate: Date, endDate: Date): Promise<SensorReading[]>;
+  getStatsBySensorType(sensorType: SensorType, userId: string, startDate?: Date, endDate?: Date): Promise<SensorReadingStats>;
+  getLatestBySensorType(sensorType: SensorType, userId: string): Promise<SensorReading | null>;
 }

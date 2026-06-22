@@ -2,30 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  role: "USER" | "SUPER_ADMIN";
-};
+import { useEffect } from "react";
+import { useAuthStore } from "@/src/store/authStore";
 
 export function Header() {
   const pathname = usePathname();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, initialized, fetchProfile, logout } = useAuthStore();
 
   useEffect(() => {
-    fetch("/api/auth/profile")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setUser(data))
-      .finally(() => setLoading(false));
-  }, []);
+    if (!initialized) {
+      fetchProfile();
+    }
+  }, [initialized, fetchProfile]);
 
   const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    setUser(null);
+    await logout();
     window.location.href = "/";
   };
 

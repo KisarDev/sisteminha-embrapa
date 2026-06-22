@@ -4,22 +4,23 @@ import { SensorReadingInput } from "@/src/modules/iot/interfaces/IIotProvider";
 import { ISensorReadingRepository } from "@/src/modules/iot/interfaces/ISensorReadingRepository";
 
 export class PrismaSensorReadingRepository implements ISensorReadingRepository {
-  create(input: SensorReadingInput) {
+  create(input: SensorReadingInput & { userId: string }) {
     return prisma.sensorReading.create({ data: input });
   }
 
-  findBySensorType(sensorType: SensorType, limit = 100) {
+  findBySensorType(sensorType: SensorType, userId: string, limit = 100) {
     return prisma.sensorReading.findMany({
-      where: { sensorType },
+      where: { sensorType, userId },
       orderBy: { measuredAt: "desc" },
       take: limit,
     });
   }
 
-  findByDateRange(sensorType: SensorType, startDate: Date, endDate: Date) {
+  findByDateRange(sensorType: SensorType, userId: string, startDate: Date, endDate: Date) {
     return prisma.sensorReading.findMany({
       where: {
         sensorType,
+        userId,
         measuredAt: {
           gte: startDate,
           lte: endDate,
@@ -29,9 +30,10 @@ export class PrismaSensorReadingRepository implements ISensorReadingRepository {
     });
   }
 
-  async getStatsBySensorType(sensorType: SensorType, startDate?: Date, endDate?: Date) {
-    const where = {
+  async getStatsBySensorType(sensorType: SensorType, userId: string, startDate?: Date, endDate?: Date) {
+    const where: Record<string, unknown> = {
       sensorType,
+      userId,
       ...(startDate || endDate
         ? {
             measuredAt: {
@@ -66,9 +68,9 @@ export class PrismaSensorReadingRepository implements ISensorReadingRepository {
     };
   }
 
-  getLatestBySensorType(sensorType: SensorType) {
+  getLatestBySensorType(sensorType: SensorType, userId: string) {
     return prisma.sensorReading.findFirst({
-      where: { sensorType },
+      where: { sensorType, userId },
       orderBy: { measuredAt: "desc" },
     });
   }

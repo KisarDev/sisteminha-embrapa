@@ -1,6 +1,7 @@
 import cron, { ScheduledTask } from "node-cron";
 import { SensorType } from "@prisma/client";
 import { IotIngestionService, DEFAULT_SENSOR_TYPES } from "@/src/modules/iot/services/IotIngestionService";
+import { IUserRepository } from "@/src/modules/auth/interfaces/IUserRepository";
 
 type SchedulerSource = "real" | "simulation";
 
@@ -27,6 +28,7 @@ export class SchedulerService {
   constructor(
     private readonly simulationIngestionService: IotIngestionService,
     private readonly realIngestionService: IotIngestionService,
+    private readonly userRepository: IUserRepository,
   ) {}
 
   initialize() {
@@ -60,13 +62,19 @@ export class SchedulerService {
 
     const selectedSource = source ?? this.getSource();
     const service = this.resolveService(selectedSource);
-    const readings = await service.ingest(sensorTypes);
+    const allUsers = await this.userRepository.findMany();
+
+    let totalReadings = 0;
+    for (const user of allUsers) {
+      const readings = await service.ingest(sensorTypes, user.id);
+      totalReadings += readings.length;
+    }
 
     this.lastRunAt = new Date();
     this.lastRunSource = selectedSource;
-    this.lastRunCount = readings.length;
+    this.lastRunCount = totalReadings;
 
-    return readings;
+    return [];
   }
 
   pause() {
@@ -99,13 +107,18 @@ export class SchedulerService {
 
   private async runScheduledIngestion() {
     const source = this.getSource();
-    const readings = await this.resolveService(source).ingest(DEFAULT_SENSOR_TYPES);
+    const service = this.resolveService(source);
+    const allUsers = await this.userRepository.findMany();
+
+    let totalReadings = 0;
+    for (const user of allUsers) {
+      const readings = await service.ingest(DEFAULT_SENSOR_TYPES, user.id);
+      totalReadings += readings.length;
+    }
 
     this.lastRunAt = new Date();
     this.lastRunSource = source;
-    this.lastRunCount = readings.length;
-
-    return readings;
+    this.lastRunCount = totalReadings;
   }
 
   private resolveService(source: SchedulerSource) {

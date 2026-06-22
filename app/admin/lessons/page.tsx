@@ -1,10 +1,11 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Card } from "@/src/components/ui/Card";
 import { Input } from "@/src/components/ui/Input";
 import { Button } from "@/src/components/ui/Button";
+import { api } from "@/src/lib/api";
+import { AuthGuard } from "@/src/components/auth/AuthGuard";
 
 const CATEGORIES = [
   { value: "GENERAL", label: "Geral" },
@@ -25,7 +26,7 @@ type Lesson = {
   createdAt: string;
 };
 
-export default function AdminLessonsPage() {
+function LessonsContent() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
@@ -38,9 +39,11 @@ export default function AdminLessonsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const fetchLessons = async () => {
-    const res = await fetch("/api/lessons");
-    if (res.ok) {
-      setLessons(await res.json());
+    try {
+      const data = await api<Lesson[]>("/api/lessons");
+      setLessons(data);
+    } catch {
+      // api() handles errors
     }
     setLoading(false);
   };
@@ -63,27 +66,22 @@ export default function AdminLessonsPage() {
       ...(thumbnailUrl ? { thumbnailUrl } : {}),
     };
 
-    const res = await fetch("/api/lessons", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.message || "Erro ao criar aula.");
-      setSubmitting(false);
-      return;
+    try {
+      await api("/api/lessons", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      setTitle("");
+      setDescription("");
+      setContent("");
+      setVideoUrl("");
+      setCategory("GENERAL");
+      setThumbnailUrl("");
+      fetchLessons();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao criar aula.");
     }
-
-    setTitle("");
-    setDescription("");
-    setContent("");
-    setVideoUrl("");
-    setCategory("GENERAL");
-    setThumbnailUrl("");
     setSubmitting(false);
-    fetchLessons();
   };
 
   return (
@@ -97,70 +95,41 @@ export default function AdminLessonsPage() {
         <Card>
           <h2 className="mb-4 text-lg font-medium text-[var(--color-text)]">Nova aula</h2>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {error && (
-              <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-            )}
+            {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
             <div className="flex flex-col gap-1.5">
               <label htmlFor="title" className="text-sm font-medium text-[var(--color-text)]">Título</label>
               <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
             </div>
-
             <div className="flex flex-col gap-1.5">
               <label htmlFor="description" className="text-sm font-medium text-[var(--color-text)]">Descrição</label>
-              <textarea
-                id="description"
-                rows={2}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                required
-                className="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none"
-              />
+              <textarea id="description" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} required
+                className="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none" />
             </div>
-
             <div className="flex flex-col gap-1.5">
               <label htmlFor="content" className="text-sm font-medium text-[var(--color-text)]">Conteúdo</label>
-              <textarea
-                id="content"
-                rows={4}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                required
-                className="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none"
-              />
+              <textarea id="content" rows={4} value={content} onChange={(e) => setContent(e.target.value)} required
+                className="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none" />
             </div>
-
             <div className="flex flex-col gap-1.5">
               <label htmlFor="videoUrl" className="text-sm font-medium text-[var(--color-text)]">URL do vídeo</label>
               <Input id="videoUrl" type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} required />
             </div>
-
             <div className="flex flex-col gap-1.5">
               <label htmlFor="category" className="text-sm font-medium text-[var(--color-text)]">Categoria</label>
-              <select
-                id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none"
-              >
+              <select id="category" value={category} onChange={(e) => setCategory(e.target.value)}
+                className="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none">
                 {CATEGORIES.map((c) => (
                   <option key={c.value} value={c.value}>{c.label}</option>
                 ))}
               </select>
             </div>
-
             <div className="flex flex-col gap-1.5">
               <label htmlFor="thumbnailUrl" className="text-sm font-medium text-[var(--color-text)]">
                 URL da thumbnail <span className="text-[var(--color-text-muted)]">(opcional)</span>
               </label>
-              <Input
-                id="thumbnailUrl"
-                type="url"
-                value={thumbnailUrl}
-                onChange={(e) => setThumbnailUrl(e.target.value)}
-              />
+              <Input id="thumbnailUrl" type="url" value={thumbnailUrl} onChange={(e) => setThumbnailUrl(e.target.value)} />
             </div>
-
             <Button type="submit" disabled={submitting}>
               {submitting ? "Criando..." : "Criar aula"}
             </Button>
@@ -182,11 +151,7 @@ export default function AdminLessonsPage() {
                     {lesson.slug} &middot; {CATEGORIES.find((c) => c.value === lesson.category)?.label || lesson.category}
                   </p>
                 </div>
-                <a
-                  href={`/aulas/${lesson.slug}`}
-                  target="_blank"
-                  className="mt-2 inline-block text-sm text-[var(--color-primary)] underline"
-                >
+                <a href={`/aulas/${lesson.slug}`} target="_blank" className="mt-2 inline-block text-sm text-[var(--color-primary)] underline">
                   Ver página
                 </a>
               </Card>
@@ -195,5 +160,13 @@ export default function AdminLessonsPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function AdminLessonsPage() {
+  return (
+    <AuthGuard>
+      <LessonsContent />
+    </AuthGuard>
   );
 }

@@ -1,10 +1,11 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Card } from "@/src/components/ui/Card";
 import { Input } from "@/src/components/ui/Input";
 import { Button } from "@/src/components/ui/Button";
+import { api } from "@/src/lib/api";
+import { AuthGuard } from "@/src/components/auth/AuthGuard";
 
 const RECORD_TYPES = [
   { value: "CHICKEN_EGGS", label: "Ovos de galinha" },
@@ -32,8 +33,7 @@ type ManualRecord = {
   createdAt: string;
 };
 
-export default function ManualRecordsPage() {
-  const router = useRouter();
+function ManualRecordsContent() {
   const [records, setRecords] = useState<ManualRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [type, setType] = useState("OBSERVATION");
@@ -44,13 +44,11 @@ export default function ManualRecordsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const fetchRecords = async () => {
-    const res = await fetch("/api/manual-records");
-    if (res.status === 401) {
-      router.push("/login");
-      return;
-    }
-    if (res.ok) {
-      setRecords(await res.json());
+    try {
+      const data = await api<ManualRecord[]>("/api/manual-records");
+      setRecords(data);
+    } catch {
+      // api() handles 401 redirect
     }
     setLoading(false);
   };
@@ -71,31 +69,28 @@ export default function ManualRecordsPage() {
     if (quantity) body.quantity = parseFloat(quantity);
     if (notes) body.notes = notes;
 
-    const res = await fetch("/api/manual-records", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.message || "Erro ao criar registro.");
-      setSubmitting(false);
-      return;
+    try {
+      await api("/api/manual-records", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      setType("OBSERVATION");
+      setQuantity("");
+      setNotes("");
+      setObservedAt(new Date().toISOString().slice(0, 16));
+      fetchRecords();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao criar registro.");
     }
-
-    setType("OBSERVATION");
-    setQuantity("");
-    setNotes("");
-    setObservedAt(new Date().toISOString().slice(0, 16));
     setSubmitting(false);
-    fetchRecords();
   };
 
   const handleDelete = async (id: string) => {
-    const res = await fetch(`/api/manual-records/${id}`, { method: "DELETE" });
-    if (res.ok) {
+    try {
+      await api(`/api/manual-records/${id}`, { method: "DELETE" });
       setRecords((prev) => prev.filter((r) => r.id !== id));
+    } catch {
+      // api() handles errors
     }
   };
 
@@ -211,5 +206,13 @@ export default function ManualRecordsPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ManualRecordsPage() {
+  return (
+    <AuthGuard>
+      <ManualRecordsContent />
+    </AuthGuard>
   );
 }

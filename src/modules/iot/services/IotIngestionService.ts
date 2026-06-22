@@ -24,15 +24,14 @@ export class IotIngestionService {
     private readonly alertService: AlertService,
   ) {}
 
-  async ingest(sensorTypes = DEFAULT_SENSOR_TYPES) {
+  async ingest(sensorTypes: SensorType[], userId: string) {
     const created = [];
     for (const sensorType of sensorTypes) {
       const reading = await this.provider.getReading(sensorType);
-      const savedReading = await this.sensorReadingRepository.create(reading);
+      const savedReading = await this.sensorReadingRepository.create({ ...reading, userId });
       created.push(savedReading);
 
-      // Check thresholds and generate alerts automatically
-      await this.alertService.checkThresholds(savedReading);
+      await this.alertService.checkThresholds(savedReading, userId);
     }
     return created;
   }

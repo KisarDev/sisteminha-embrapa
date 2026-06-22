@@ -7,9 +7,9 @@ export class PrismaAlertRepository implements IAlertRepository {
     return prisma.alert.create({ data: input });
   }
 
-  async findUnresolved(limit = 100) {
+  async findUnresolved(userId: string, limit = 100) {
     return prisma.alert.findMany({
-      where: { isResolved: false },
+      where: { isResolved: false, userId },
       orderBy: { createdAt: "desc" },
       take: limit,
       include: {
@@ -18,9 +18,9 @@ export class PrismaAlertRepository implements IAlertRepository {
     });
   }
 
-  async findBySensorType(sensorType: SensorType, limit = 50) {
+  async findBySensorType(sensorType: SensorType, userId: string, limit = 50) {
     return prisma.alert.findMany({
-      where: { sensorType },
+      where: { sensorType, userId },
       orderBy: { createdAt: "desc" },
       take: limit,
       include: {

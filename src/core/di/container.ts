@@ -23,6 +23,7 @@ const realIngestionService = new IotIngestionService(new RealIotProvider(), sens
 const schedulerService = new SchedulerService(
   simulationIngestionService,
   realIngestionService,
+  userRepository,
 );
 
 export const container = {

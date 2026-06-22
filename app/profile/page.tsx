@@ -5,38 +5,33 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/src/components/ui/Card";
 import { Input } from "@/src/components/ui/Input";
 import { Button } from "@/src/components/ui/Button";
-
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-};
+import { useAuthStore } from "@/src/store/authStore";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const { user, fetchProfile, updateProfile, initialized, loading: authLoading } = useAuthStore();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   useEffect(() => {
-    fetch("/api/auth/profile")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!data) {
-          router.push("/login");
-          return;
-        }
-        setUser(data);
-        setName(data.name);
-        setEmail(data.email);
-      })
-      .finally(() => setLoading(false));
-  }, [router]);
+    if (!initialized) {
+      fetchProfile();
+    }
+  }, [initialized, fetchProfile]);
+
+  useEffect(() => {
+    if (initialized && !authLoading) {
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+      setName(user.name);
+      setEmail(user.email);
+    }
+  }, [user, initialized, authLoading, router]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -44,27 +39,27 @@ export default function ProfilePage() {
     setSuccess("");
     setSaving(true);
 
-    const res = await fetch("/api/auth/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email }),
-    });
-
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.message || "Erro ao atualizar.");
-      setSaving(false);
-      return;
+    try {
+      await updateProfile({ name, email });
+      setSuccess("Perfil atualizado com sucesso.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao atualizar.");
     }
-
-    setSuccess("Perfil atualizado com sucesso.");
     setSaving(false);
   };
 
-  if (loading) {
+  if (!initialized || authLoading) {
     return (
       <main className="mx-auto flex w-full max-w-md p-6 pt-12">
         <p className="text-[var(--color-text-muted)]">Carregando...</p>
+      </main>
+    );
+  }
+
+  if (!user) {
+    return (
+      <main className="mx-auto flex w-full max-w-md p-6 pt-12">
+        <p className="text-[var(--color-text-muted)]">Redirecionando...</p>
       </main>
     );
   }
@@ -74,7 +69,7 @@ export default function ProfilePage() {
       <div>
         <h1 className="text-2xl font-semibold text-[var(--color-text)]">Meu Perfil</h1>
         <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-          {user?.role === "SUPER_ADMIN" ? "Administrador" : "Usuário"}
+          {user.role === "SUPER_ADMIN" ? "Administrador" : "Usuário"}
         </p>
       </div>
 

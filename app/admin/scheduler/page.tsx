@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Card } from "@/src/components/ui/Card";
 import { Button } from "@/src/components/ui/Button";
+import { api } from "@/src/lib/api";
+import { AuthGuard } from "@/src/components/auth/AuthGuard";
 
 type SchedulerStatus = {
   enabled: boolean;
@@ -17,22 +18,17 @@ type SchedulerStatus = {
   lastRunCount: number;
 };
 
-export default function SchedulerAdminPage() {
-  const router = useRouter();
+function SchedulerContent() {
   const [status, setStatus] = useState<SchedulerStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
   const fetchStatus = async () => {
-    const res = await fetch("/api/scheduler");
-    if (res.status === 401 || res.status === 403) {
-      router.push("/login");
-      return;
-    }
-    if (res.ok) {
-      setStatus(await res.json());
-    } else {
+    try {
+      const data = await api<SchedulerStatus>("/api/scheduler");
+      setStatus(data);
+    } catch {
       setError("Erro ao carregar status do scheduler.");
     }
     setLoading(false);
@@ -44,39 +40,36 @@ export default function SchedulerAdminPage() {
 
   const handlePause = async () => {
     setMessage("");
-    const res = await fetch("/api/scheduler/pause", { method: "POST" });
-    if (res.ok) {
-      const data = await res.json();
+    try {
+      const data = await api<{ message: string; status: SchedulerStatus }>("/api/scheduler/pause", { method: "POST" });
       setStatus(data.status);
       setMessage(data.message);
-    } else {
+    } catch {
       setError("Erro ao pausar scheduler.");
     }
   };
 
   const handleResume = async () => {
     setMessage("");
-    const res = await fetch("/api/scheduler/resume", { method: "POST" });
-    if (res.ok) {
-      const data = await res.json();
+    try {
+      const data = await api<{ message: string; status: SchedulerStatus }>("/api/scheduler/resume", { method: "POST" });
       setStatus(data.status);
       setMessage(data.message);
-    } else {
+    } catch {
       setError("Erro ao retomar scheduler.");
     }
   };
 
   const handleManualTrigger = async () => {
     setMessage("");
-    const res = await fetch("/api/scheduler", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    });
-    if (res.ok) {
-      const data = await res.json();
+    try {
+      const data = await api<{ message: string; count: number }>("/api/scheduler", {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
       setMessage(`${data.message} (${data.count} leituras)`);
       fetchStatus();
-    } else {
+    } catch {
       setError("Erro ao executar leitura manual.");
     }
   };
@@ -96,12 +89,8 @@ export default function SchedulerAdminPage() {
         <p className="mt-1 text-sm text-[var(--color-text-muted)]">Controle das leituras automáticas IoT.</p>
       </div>
 
-      {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-      )}
-      {message && (
-        <p className="rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-700">{message}</p>
-      )}
+      {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {message && <p className="rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-700">{message}</p>}
 
       {status && (
         <>
@@ -170,5 +159,13 @@ export default function SchedulerAdminPage() {
         </>
       )}
     </main>
+  );
+}
+
+export default function SchedulerAdminPage() {
+  return (
+    <AuthGuard>
+      <SchedulerContent />
+    </AuthGuard>
   );
 }

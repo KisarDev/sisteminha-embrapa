@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Card } from "@/src/components/ui/Card";
 import { Button } from "@/src/components/ui/Button";
+import { api } from "@/src/lib/api";
+import { AuthGuard } from "@/src/components/auth/AuthGuard";
 
 const SENSOR_TYPES = [
   { value: "CHICKEN_TEMPERATURE", label: "Temperatura das galinhas" },
@@ -19,8 +20,7 @@ const SENSOR_TYPES = [
   { value: "FISH_TANK_WATER_LEVEL", label: "Nível da água" },
 ] as const;
 
-export default function IotAdminPage() {
-  const router = useRouter();
+function IotContent() {
   const [source, setSource] = useState<"simulation" | "real">("simulation");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [result, setResult] = useState<{ count: number; message: string } | null>(null);
@@ -41,26 +41,15 @@ export default function IotAdminPage() {
     const body: Record<string, unknown> = { source };
     if (selectedTypes.length > 0) body.sensorTypes = selectedTypes;
 
-    const res = await fetch("/api/iot/ingest", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    if (res.status === 401 || res.status === 403) {
-      router.push("/login");
-      return;
+    try {
+      const data = await api<{ count: number; message?: string }>("/api/iot/ingest", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      setResult({ count: data.count, message: `${data.count} leituras criadas.` });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro na ingestão.");
     }
-
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.message || "Erro na ingestão.");
-      setLoading(false);
-      return;
-    }
-
-    const data = await res.json();
-    setResult({ count: data.count, message: `${data.count} leituras criadas.` });
     setLoading(false);
   };
 
@@ -68,44 +57,25 @@ export default function IotAdminPage() {
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6 pt-8">
       <div>
         <h1 className="text-2xl font-semibold text-[var(--color-text)]">Ingestão IoT</h1>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-          Disparar leitura manual de sensores.
-        </p>
+        <p className="mt-1 text-sm text-[var(--color-text-muted)]">Disparar leitura manual de sensores.</p>
       </div>
 
-      {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-      )}
-      {result && (
-        <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">{result.message}</p>
-      )}
+      {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {result && <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">{result.message}</p>}
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <h2 className="mb-4 text-lg font-medium text-[var(--color-text)]">Configuração</h2>
-
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-[var(--color-text)]">Fonte</label>
               <div className="flex gap-3">
                 <label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
-                  <input
-                    type="radio"
-                    name="source"
-                    value="simulation"
-                    checked={source === "simulation"}
-                    onChange={() => setSource("simulation")}
-                  />
+                  <input type="radio" name="source" value="simulation" checked={source === "simulation"} onChange={() => setSource("simulation")} />
                   Simulação
                 </label>
                 <label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
-                  <input
-                    type="radio"
-                    name="source"
-                    value="real"
-                    checked={source === "real"}
-                    onChange={() => setSource("real")}
-                  />
+                  <input type="radio" name="source" value="real" checked={source === "real"} onChange={() => setSource("real")} />
                   Real
                 </label>
               </div>
@@ -117,15 +87,8 @@ export default function IotAdminPage() {
               </span>
               <div className="max-h-48 space-y-1 overflow-y-auto rounded-md border border-[var(--color-border)] p-2">
                 {SENSOR_TYPES.map((st) => (
-                  <label
-                    key={st.value}
-                    className="flex items-center gap-2 rounded px-2 py-1 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface)]"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedTypes.includes(st.value)}
-                      onChange={() => toggleType(st.value)}
-                    />
+                  <label key={st.value} className="flex items-center gap-2 rounded px-2 py-1 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface)]">
+                    <input type="checkbox" checked={selectedTypes.includes(st.value)} onChange={() => toggleType(st.value)} />
                     {st.label}
                   </label>
                 ))}
@@ -146,5 +109,13 @@ export default function IotAdminPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function IotAdminPage() {
+  return (
+    <AuthGuard>
+      <IotContent />
+    </AuthGuard>
   );
 }

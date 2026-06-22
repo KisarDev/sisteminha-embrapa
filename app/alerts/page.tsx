@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Card } from "@/src/components/ui/Card";
 import { Button } from "@/src/components/ui/Button";
 import { AlertBadge } from "@/src/components/dashboard/AlertBadge";
+import { api } from "@/src/lib/api";
+import { AuthGuard } from "@/src/components/auth/AuthGuard";
 
 const sensorLabels: Record<string, string> = {
   CHICKEN_TEMPERATURE: "Temperatura das galinhas",
@@ -31,23 +32,23 @@ type Alert = {
   createdAt: string;
 };
 
-export default function AlertsPage() {
-  const router = useRouter();
+type AlertsResponse = {
+  count: number;
+  data: Alert[];
+};
+
+function AlertsContent() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [resolving, setResolving] = useState<string | null>(null);
 
   const fetchAlerts = async () => {
-    const res = await fetch("/api/alerts");
-    if (res.status === 401) {
-      router.push("/login");
-      return;
-    }
-    if (res.ok) {
-      const data = await res.json();
+    setLoading(true);
+    try {
+      const data = await api<AlertsResponse>("/api/alerts");
       setAlerts(data.data || []);
-    } else {
+    } catch {
       setError("Erro ao carregar alertas.");
     }
     setLoading(false);
@@ -59,12 +60,11 @@ export default function AlertsPage() {
 
   const handleResolve = async (id: string) => {
     setResolving(id);
-    const res = await fetch(`/api/alerts/${id}`, { method: "PATCH" });
-    if (res.ok) {
+    try {
+      await api<{ message: string }>(`/api/alerts/${id}`, { method: "PATCH" });
       setAlerts((prev) => prev.filter((a) => a.id !== id));
-    } else {
-      const data = await res.json();
-      setError(data.message || "Erro ao resolver alerta.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao resolver alerta.");
     }
     setResolving(null);
   };
@@ -128,5 +128,13 @@ export default function AlertsPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function AlertsPage() {
+  return (
+    <AuthGuard>
+      <AlertsContent />
+    </AuthGuard>
   );
 }
