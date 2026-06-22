@@ -2,31 +2,57 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { ProductionScalingService } from "@/src/modules/calculator/services/ProductionScalingService";
 
-test("ProductionScalingService calculates known crop", () => {
+test("ProductionScalingService calcula milho-verde na região Sudeste", () => {
   const service = new ProductionScalingService();
   const result = service.calculate({
-    crop: "Milho",
-    desiredProduction: 100,
-    desiredQuantity: 80,
-    periodInDays: 220,
+    cultura: "Milho-verde",
+    kgPorSemana: 50,
+    regiao: "Sudeste",
   });
 
-  assert.equal(result.crop, "Milho");
-  assert.equal(result.plantingCount, 2);
-  assert.equal(result.estimatedSeedAmount, 96);
-  assert.equal(result.estimatedHarvest, 110);
-  assert.equal(result.schedule.length, 2);
+  assert.equal(result.cultura, "Milho-verde");
+  assert.equal(result.regiao, "Sudeste");
+  assert.equal(result.tipoPlantio, "m2");
+  assert.ok(result.areaPorSemanaM2 > 0);
+  assert.ok(result.plantasPorSemana > 0);
+  assert.ok(result.semanasSimultaneas >= 11); // 80-110 dias / 7 = ~11-16 semanas
+  assert.ok(result.instrucaoPlantio.includes("Plante"));
 });
 
-test("ProductionScalingService rejects unsupported crop", () => {
+test("ProductionScalingService calcula tomate na região Norte", () => {
   const service = new ProductionScalingService();
+  const result = service.calculate({
+    cultura: "Tomate",
+    kgPorSemana: 50,
+    regiao: "Norte",
+  });
 
+  assert.equal(result.cultura, "Tomate");
+  assert.equal(result.tipoPlantio, "m2");
+  assert.equal(result.producaoDisplay, "5,0 a 10,0 kg/m²");
+  assert.ok(result.areaPorSemanaM2 > 0);
+  assert.ok(result.plantasPorSemana > 0);
+  assert.ok(result.instrucaoPlantio.includes("Plante"));
+});
+
+test("ProductionScalingService rejeita cultura inexistente", () => {
+  const service = new ProductionScalingService();
   assert.throws(() =>
     service.calculate({
-      crop: "Cenoura",
-      desiredProduction: 100,
-      desiredQuantity: 80,
-      periodInDays: 220,
+      cultura: "Cenoura",
+      kgPorSemana: 50,
+      regiao: "Sul",
+    }),
+  );
+});
+
+test("ProductionScalingService rejeita kgPorSemana zero", () => {
+  const service = new ProductionScalingService();
+  assert.throws(() =>
+    service.calculate({
+      cultura: "Tomate",
+      kgPorSemana: 0,
+      regiao: "Nordeste",
     }),
   );
 });

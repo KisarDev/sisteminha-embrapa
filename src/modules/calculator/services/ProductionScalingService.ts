@@ -1,56 +1,89 @@
 import { AppError } from "@/src/core/errors/AppError";
+import { CULTURAS, REGIOES } from "@/src/modules/calculator/data/crops";
+import type { Regiao, Cultura } from "@/src/modules/calculator/data/crops";
 import {
   ICropCalculator,
   ProductionScalingInput,
   ProductionScalingResult,
 } from "@/src/modules/calculator/interfaces/ICropCalculator";
 
-type CropRule = {
-  averageCycleDays: number;
-  seedsPerProductionUnit: number;
-  expectedYieldFactor: number;
-};
+function mediana(valores: [number, number]): number {
+  return (valores[0] + valores[1]) / 2;
+}
 
-const cropRules: Record<string, CropRule> = {
-  milho: { averageCycleDays: 110, seedsPerProductionUnit: 1.2, expectedYieldFactor: 1.1 },
-  feijao: { averageCycleDays: 90, seedsPerProductionUnit: 1.4, expectedYieldFactor: 1.05 },
-  abobora: { averageCycleDays: 100, seedsPerProductionUnit: 0.8, expectedYieldFactor: 1.15 },
-  tomate: { averageCycleDays: 95, seedsPerProductionUnit: 1.8, expectedYieldFactor: 1.2 },
-  tomate_cereja: { averageCycleDays: 85, seedsPerProductionUnit: 2.1, expectedYieldFactor: 1.25 },
-  batata: { averageCycleDays: 120, seedsPerProductionUnit: 1.6, expectedYieldFactor: 1.1 },
-  alface: { averageCycleDays: 55, seedsPerProductionUnit: 2.6, expectedYieldFactor: 1.2 },
-  couve: { averageCycleDays: 75, seedsPerProductionUnit: 1.9, expectedYieldFactor: 1.18 },
-};
+function lookupCultura(nome: string): Cultura {
+  const cultura = CULTURAS.find(
+    (c) => c.nome.toLowerCase() === nome.trim().toLowerCase()
+  );
+  if (!cultura) {
+    throw new AppError(400, `Cultura "${nome}" não encontrada.`);
+  }
+  return cultura;
+}
 
 export class ProductionScalingService implements ICropCalculator {
   calculate(input: ProductionScalingInput): ProductionScalingResult {
-    if (input.desiredProduction <= 0 || input.desiredQuantity <= 0 || input.periodInDays <= 0) {
-      throw new AppError(400, "Parâmetros inválidos.");
+    if (input.kgPorSemana <= 0) {
+      throw new AppError(400, "Quantidade deve ser maior que zero.");
     }
 
-    const cropKey = input.crop.trim().toLowerCase().replaceAll(" ", "_");
-    const rule = cropRules[cropKey];
-    if (!rule) {
-      throw new AppError(400, "Cultura não suportada.");
+    const regiao = input.regiao as Regiao;
+    if (!REGIOES.includes(regiao)) {
+      throw new AppError(400, `Região "${input.regiao}" inválida.`);
     }
 
-    const plantingCount = Math.max(1, Math.ceil(input.periodInDays / rule.averageCycleDays));
-    const estimatedSeedAmount = Number((input.desiredQuantity * rule.seedsPerProductionUnit).toFixed(2));
-    const estimatedHarvest = Number((input.desiredProduction * rule.expectedYieldFactor).toFixed(2));
-    const spacing = Math.max(1, Math.floor(input.periodInDays / plantingCount));
+    const cultura = lookupCultura(input.cultura);
+    const epocaRecomendada = cultura.epocas_plantio[regiao];
+
+    const cicloMedio = mediana(cultura.dias_colheita);
+    const intervaloDias = 7;
+    const semanasSimultaneas = Math.ceil(cicloMedio / intervaloDias);
+
+    let areaPorSemanaM2: number;
+    let plantasPorSemana: number;
+
+    if (cultura.tipo_plantio === 'm2') {
+      const prodMedia = mediana(cultura.producao_por_m2!);
+      areaPorSemanaM2 = Number((input.kgPorSemana / prodMedia).toFixed(2));
+      const areaPorPlantaM2 = (cultura.espacamento_linha_cm * cultura.espacamento_planta_cm) / 10000;
+      plantasPorSemana = Math.ceil(areaPorSemanaM2 / areaPorPlantaM2);
+      areaPorSemanaM2 = Number((plantasPorSemana * areaPorPlantaM2).toFixed(2));
+    } else {
+      const prodMedia = mediana(cultura.producao_por_planta!);
+      plantasPorSemana = Math.ceil(input.kgPorSemana / prodMedia);
+      const areaPorPlantaM2 = (cultura.espacamento_linha_cm * cultura.espacamento_planta_cm) / 10000;
+      areaPorSemanaM2 = Number((plantasPorSemana * areaPorPlantaM2).toFixed(2));
+    }
+
+    const areaTotalM2 = Number((areaPorSemanaM2 * semanasSimultaneas).toFixed(2));
+    const plantasTotal = plantasPorSemana * semanasSimultaneas;
+
+    const tipoArea = cultura.tipo_plantio === 'm2' ? 'm²' : 'plantas';
+    const valorSemana = cultura.tipo_plantio === 'm2' ? `${areaPorSemanaM2} m²` : `${plantasPorSemana} plantas`;
+
+    const instrucaoPlantio = cultura.epocas_plantio[regiao].toLowerCase().includes('não recomendado')
+      ? `Atenção: esta cultura não é recomendada para a região ${regiao}. Consulte um técnico agrícola.`
+      : `Plante ${valorSemana} (${tipoArea}) a cada ${intervaloDias} dias para colher ${input.kgPorSemana} kg por semana de forma contínua. ` +
+        `Mantenha ${semanasSimultaneas} plantios simultâneos (total de ${cultura.tipo_plantio === 'm2' ? areaTotalM2 + ' m²' : plantasTotal + ' plantas'}).`;
 
     return {
-      crop: input.crop,
-      plantingCount,
-      estimatedSeedAmount,
-      estimatedHarvest,
-      schedule: Array.from({ length: plantingCount }, (_, index) => {
-        const plantingDay = index * spacing;
-        return {
-          plantingDay,
-          expectedHarvestDay: plantingDay + rule.averageCycleDays,
-        };
-      }),
+      cultura: cultura.nome,
+      regiao: regiao,
+      producaoPorM2: cultura.producao_por_m2,
+      producaoPorPlanta: cultura.producao_por_planta,
+      producaoDisplay: cultura.producao_display,
+      espacamentoLinhaCm: cultura.espacamento_linha_cm,
+      espacamentoPlantaCm: cultura.espacamento_planta_cm,
+      diasColheita: cultura.dias_colheita,
+      epocaRecomendada: epocaRecomendada,
+      tipoPlantio: cultura.tipo_plantio,
+      areaPorSemanaM2: areaPorSemanaM2,
+      plantasPorSemana: plantasPorSemana,
+      intervaloDias: intervaloDias,
+      semanasSimultaneas: semanasSimultaneas,
+      areaTotalM2: areaTotalM2,
+      plantasTotal: plantasTotal,
+      instrucaoPlantio: instrucaoPlantio,
     };
   }
 }

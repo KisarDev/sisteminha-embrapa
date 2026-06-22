@@ -1,16 +1,29 @@
+import type { Regiao } from "@/src/modules/calculator/data/crops";
+
 export type ProductionScalingInput = {
-  crop: string;
-  desiredProduction: number;
-  desiredQuantity: number;
-  periodInDays: number;
+  cultura: string;
+  kgPorSemana: number;
+  regiao: Regiao;
 };
 
 export type ProductionScalingResult = {
-  crop: string;
-  plantingCount: number;
-  estimatedSeedAmount: number;
-  estimatedHarvest: number;
-  schedule: Array<{ plantingDay: number; expectedHarvestDay: number }>;
+  cultura: string;
+  regiao: Regiao;
+  producaoPorM2: [number, number] | null;
+  producaoPorPlanta: [number, number] | null;
+  producaoDisplay: string;
+  espacamentoLinhaCm: number;
+  espacamentoPlantaCm: number;
+  diasColheita: [number, number];
+  epocaRecomendada: string;
+  tipoPlantio: 'm2' | 'planta';
+  areaPorSemanaM2: number;
+  plantasPorSemana: number;
+  intervaloDias: number;
+  semanasSimultaneas: number;
+  areaTotalM2: number;
+  plantasTotal: number;
+  instrucaoPlantio: string;
 };
 
 export interface ICropCalculator {
