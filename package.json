@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:nodemon": "nodemon",
+    "dev:docker": "next dev --turbopack --host 0.0.0.0",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -35,6 +37,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "^15.5.19",
+    "nodemon": "^3.1.14",
     "prisma": "^6.19.3",
     "tailwindcss": "^4",
     "tsx": "^4.20.6",

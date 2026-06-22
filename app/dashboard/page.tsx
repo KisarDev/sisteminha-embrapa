@@ -6,6 +6,7 @@ import { Card } from "@/src/components/ui/Card";
 import { container } from "@/src/core/di/container";
 import { readSession } from "@/src/core/http/auth";
 import { redirect } from "next/navigation";
+import { RefreshDashboardButton } from "@/src/components/dashboard/RefreshDashboardButton";
 
 const sensorLabels: Record<SensorType, string> = {
   CHICKEN_TEMPERATURE: "Temperatura das galinhas",
@@ -41,12 +42,10 @@ export default async function DashboardPage() {
           <h1 className="text-3xl font-semibold text-[var(--color-text)]">Dashboard</h1>
           <p className="text-[var(--color-text-muted)]">Resumo operacional dos sensores e alertas ativos do sisteminha.</p>
         </div>
-        <div className="flex gap-4 text-sm">
-          <Link className="text-[var(--color-primary)] underline" href="/">
+        <div className="flex items-center gap-4">
+          <RefreshDashboardButton />
+          <Link className="text-sm text-[var(--color-primary)] underline" href="/">
             Início
-          </Link>
-          <Link className="text-[var(--color-primary)] underline" href="/api/dashboard/summary">
-            API resumo
           </Link>
         </div>
       </section>

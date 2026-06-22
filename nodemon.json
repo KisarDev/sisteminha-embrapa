@@ -1,0 +1,17 @@
+{
+  "watch": [
+    "src",
+    "app",
+    "prisma",
+    "instrumentation.ts",
+    "next.config.ts"
+  ],
+  "ext": "ts,tsx,js,jsx,json,prisma",
+  "ignore": [
+    "node_modules",
+    ".next",
+    "dist"
+  ],
+  "exec": "next dev --turbopack",
+  "delay": "1000"
+}
