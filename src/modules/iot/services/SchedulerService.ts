@@ -11,9 +11,13 @@ type ScheduleDefinition = {
 };
 
 const DEFAULT_SCHEDULES: ScheduleDefinition[] = [
+  { label: "00:00", expression: "0 0 * * *" },
+  { label: "03:00", expression: "0 3 * * *" },
   { label: "06:00", expression: "0 6 * * *" },
+  { label: "09:00", expression: "0 9 * * *" },
   { label: "12:00", expression: "0 12 * * *" },
-  { label: "17:00", expression: "0 17 * * *" },
+  { label: "15:00", expression: "0 15 * * *" },
+  { label: "18:00", expression: "0 18 * * *" },
   { label: "21:00", expression: "0 21 * * *" },
 ];
 

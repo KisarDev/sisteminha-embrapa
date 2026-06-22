@@ -1,7 +1,7 @@
 import { SensorType } from "@prisma/client";
 import { prisma } from "@/src/core/database/prisma";
 import { SensorReadingInput } from "@/src/modules/iot/interfaces/IIotProvider";
-import { ISensorReadingRepository } from "@/src/modules/iot/interfaces/ISensorReadingRepository";
+import { ISensorReadingRepository, FindAllOptions } from "@/src/modules/iot/interfaces/ISensorReadingRepository";
 
 export class PrismaSensorReadingRepository implements ISensorReadingRepository {
   create(input: SensorReadingInput & { userId: string }) {
@@ -66,6 +66,30 @@ export class PrismaSensorReadingRepository implements ISensorReadingRepository {
       maximum: aggregate._max.value,
       latest,
     };
+  }
+
+  findAll(userId: string, options?: FindAllOptions) {
+    const { sensorType, limit = 50, offset = 0, startDate, endDate, orderBy = "desc" } = options ?? {};
+
+    const where: Record<string, unknown> = {
+      userId,
+      ...(sensorType ? { sensorType } : {}),
+      ...(startDate || endDate
+        ? {
+            measuredAt: {
+              ...(startDate ? { gte: startDate } : {}),
+              ...(endDate ? { lte: endDate } : {}),
+            },
+          }
+        : {}),
+    };
+
+    return prisma.sensorReading.findMany({
+      where,
+      orderBy: { measuredAt: orderBy },
+      take: limit,
+      skip: offset,
+    });
   }
 
   getLatestBySensorType(sensorType: SensorType, userId: string) {

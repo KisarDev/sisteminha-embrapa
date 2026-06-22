@@ -106,6 +106,14 @@ export function Header() {
                 Calculadora
               </Link>
               <Link
+                href="/readings"
+                className={`text-sm transition hover:text-[var(--color-primary)] ${
+                  pathname === "/readings" ? "font-medium text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"
+                }`}
+              >
+                Leituras
+              </Link>
+              <Link
                 href="/alerts"
                 className={`text-sm transition hover:text-[var(--color-primary)] ${
                   pathname === "/alerts" ? "font-medium text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"
