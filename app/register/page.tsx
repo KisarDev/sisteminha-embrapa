@@ -16,15 +16,22 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (password !== passwordConfirmation) {
+      setError("Senhas não conferem.");
+      return;
+    }
+
     setLoading(true);
     try {
-      await register(name, email, password);
+      await register(name, email, password, passwordConfirmation);
       router.push("/dashboard");
       router.refresh();
     } catch (err) {
@@ -51,6 +58,10 @@ export default function RegisterPage() {
             <div className="flex flex-col gap-1.5">
               <label htmlFor="password" className="text-sm font-medium text-[var(--color-text)]">Senha</label>
               <Input id="password" type="password" placeholder="Mínimo 8 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="passwordConfirmation" className="text-sm font-medium text-[var(--color-text)]">Confirmar senha</label>
+              <Input id="passwordConfirmation" type="password" placeholder="Repita a senha" value={passwordConfirmation} onChange={(e) => setPasswordConfirmation(e.target.value)} minLength={8} required />
             </div>
             <Button type="submit" loading={loading} className="w-full">
               Cadastrar

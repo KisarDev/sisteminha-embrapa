@@ -13,7 +13,7 @@ export class AuthService {
     const existingUser = await this.userRepository.findByEmail(parsed.email);
 
     if (existingUser) {
-      throw new AppError(409, "E-mail já cadastrado.");
+      throw new AppError(409, "Não foi possível criar a conta. Verifique os dados e tente novamente.");
     }
 
     const passwordHash = await bcrypt.hash(parsed.password, 10);
@@ -21,7 +21,7 @@ export class AuthService {
       name: parsed.name,
       email: parsed.email,
       passwordHash,
-      role: parsed.role ?? UserRole.USER,
+      role: UserRole.USER,
     });
 
     return {

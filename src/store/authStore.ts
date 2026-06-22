@@ -12,7 +12,7 @@ type AuthState = {
   loading: boolean;
   initialized: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, passwordConfirmation: string) => Promise<void>;
   logout: () => Promise<void>;
   fetchProfile: () => Promise<void>;
   updateProfile: (data: { name?: string; email?: string }) => Promise<void>;
@@ -39,12 +39,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user: data.user, loading: false });
   },
 
-  register: async (name, email, password) => {
+  register: async (name, email, password, passwordConfirmation) => {
     set({ loading: true });
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email, password, passwordConfirmation }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({ message: "Erro ao cadastrar." }));

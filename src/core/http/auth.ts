@@ -10,10 +10,15 @@ type AuthPayload = {
   role: UserRole;
 };
 
+const DEFAULT_SECRET = "your-super-secret-jwt-key-change-this-in-production";
+
 function getSecret() {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
     throw new AppError(500, "JWT_SECRET não configurado.");
+  }
+  if (secret === DEFAULT_SECRET && process.env.NODE_ENV === "production") {
+    throw new AppError(500, "JWT_SECRET não foi alterado do valor padrão. Configure uma chave segura.");
   }
   return secret;
 }
@@ -56,7 +61,7 @@ export async function setSessionCookie(token: string) {
   cookieStore.set(AUTH_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "strict",
     path: "/",
     maxAge: 60 * 60 * 12,
   });
@@ -67,7 +72,7 @@ export async function clearSessionCookie() {
   cookieStore.set(AUTH_COOKIE, "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "strict",
     path: "/",
     maxAge: 0,
   });

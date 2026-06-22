@@ -14,7 +14,7 @@ export async function GET() {
       name: user.name,
       email: user.email,
       role: user.role,
-    });
+    }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return handleHttpError(error);
   }
