@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Card } from "@/src/components/ui/Card";
 import { Input } from "@/src/components/ui/Input";
 import { Button } from "@/src/components/ui/Button";
+import { AlertBanner } from "@/src/components/ui/AlertBanner";
+import { PageHeader } from "@/src/components/ui/PageHeader";
 import { useAuthStore } from "@/src/store/authStore";
 
 export default function LoginPage() {
@@ -20,7 +22,6 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
       await login(email, password);
       router.push("/dashboard");
@@ -32,58 +33,32 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-col gap-6 p-6 pt-12">
-      <div>
-        <h1 className="text-2xl font-semibold text-[var(--color-text)]">Entrar</h1>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">Acesse sua conta no Sisteminha.</p>
+    <main className="mx-auto flex min-h-[80vh] w-full max-w-sm flex-col items-center justify-center px-4">
+      <div className="w-full">
+        <PageHeader title="Entrar" description="Acesse sua conta no Sisteminha." />
+        <Card className="mt-6">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {error && <AlertBanner variant="error">{error}</AlertBanner>}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="email" className="text-sm font-medium text-[var(--color-text)]">Email</label>
+              <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="password" className="text-sm font-medium text-[var(--color-text)]">Senha</label>
+              <Input id="password" type="password" placeholder="Sua senha" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            </div>
+            <Button type="submit" loading={loading} className="w-full">
+              Entrar
+            </Button>
+          </form>
+        </Card>
+        <p className="mt-4 text-center text-sm text-[var(--color-text-secondary)]">
+          Não tem conta?{" "}
+          <Link href="/register" className="font-medium text-[var(--color-primary)] hover:underline">
+            Cadastre-se
+          </Link>
+        </p>
       </div>
-
-      <Card>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {error && (
-            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-          )}
-
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="email" className="text-sm font-medium text-[var(--color-text)]">
-              Email
-            </label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="password" className="text-sm font-medium text-[var(--color-text)]">
-              Senha
-            </label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Sua senha"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          <Button type="submit" disabled={loading}>
-            {loading ? "Entrando..." : "Entrar"}
-          </Button>
-        </form>
-      </Card>
-
-      <p className="text-center text-sm text-[var(--color-text-muted)]">
-        Não tem conta?{" "}
-        <Link href="/register" className="text-[var(--color-primary)] underline">
-          Cadastre-se
-        </Link>
-      </p>
     </main>
   );
 }

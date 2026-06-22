@@ -1,22 +1,21 @@
-import { InputHTMLAttributes, forwardRef } from "react";
+import { TextareaHTMLAttributes, forwardRef } from "react";
 
-type InputProps = InputHTMLAttributes<HTMLInputElement> & {
+type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   error?: string;
-  helperText?: string;
 };
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ error, helperText, className, ...props }, ref) => {
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ error, className, ...props }, ref) => {
     return (
       <div className="flex flex-col gap-1">
-        <input
+        <textarea
           ref={ref}
           className={`
             w-full rounded-[var(--radius-md)]
             border px-3 py-2 text-sm text-[var(--color-text)]
             placeholder:text-[var(--color-text-tertiary)]
             transition-colors duration-150
-            bg-white
+            bg-white resize-y
             ${error ? "border-[var(--color-danger)]" : "border-[var(--color-border)] hover:border-[var(--color-border-hover)]"}
             focus:border-[var(--color-border-focus)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/10
             disabled:opacity-40 disabled:pointer-events-none
@@ -25,10 +24,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           {...props}
         />
         {error && <p className="text-xs text-[var(--color-danger)]">{error}</p>}
-        {helperText && !error && <p className="text-xs text-[var(--color-text-tertiary)]">{helperText}</p>}
       </div>
     );
   },
 );
 
-Input.displayName = "Input";
+Textarea.displayName = "Textarea";

@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/src/components/ui/Card";
 import { Button } from "@/src/components/ui/Button";
+import { Select } from "@/src/components/ui/Select";
+import { PageHeader } from "@/src/components/ui/PageHeader";
+import { Badge } from "@/src/components/ui/Badge";
+import { PageLoading } from "@/src/components/ui/Loading";
 import { api } from "@/src/lib/api";
 import { AuthGuard } from "@/src/components/auth/AuthGuard";
 
@@ -15,7 +19,7 @@ type SensorReading = {
   source: string;
 };
 
-const SENSOR_OPTIONS: { value: string; label: string }[] = [
+const SENSOR_OPTIONS = [
   { value: "", label: "Todos os sensores" },
   { value: "CHICKEN_TEMPERATURE", label: "Temperatura das galinhas" },
   { value: "CHICKEN_LUMINOSITY", label: "Luminosidade das galinhas" },
@@ -31,17 +35,11 @@ const SENSOR_OPTIONS: { value: string; label: string }[] = [
 ];
 
 const UNIT_LABELS: Record<string, string> = {
-  CHICKEN_TEMPERATURE: "°C",
-  CHICKEN_LUMINOSITY: "lux",
-  QUAIL_TEMPERATURE: "°C",
-  QUAIL_LUMINOSITY: "lux",
-  WORMFARM_SOIL_TEMPERATURE: "°C",
-  WORMFARM_SOIL_HUMIDITY: "%",
-  COMPOST_TEMPERATURE: "°C",
-  COMPOST_HUMIDITY: "%",
-  PLANTING_SOIL_HUMIDITY: "%",
-  FISH_TANK_PH: "pH",
-  FISH_TANK_WATER_LEVEL: "cm",
+  CHICKEN_TEMPERATURE: "°C", CHICKEN_LUMINOSITY: "lux",
+  QUAIL_TEMPERATURE: "°C", QUAIL_LUMINOSITY: "lux",
+  WORMFARM_SOIL_TEMPERATURE: "°C", WORMFARM_SOIL_HUMIDITY: "%",
+  COMPOST_TEMPERATURE: "°C", COMPOST_HUMIDITY: "%",
+  PLANTING_SOIL_HUMIDITY: "%", FISH_TANK_PH: "pH", FISH_TANK_WATER_LEVEL: "cm",
 };
 
 function ReadingsContent() {
@@ -57,102 +55,88 @@ function ReadingsContent() {
       const params = new URLSearchParams();
       if (sensorType) params.set("sensorType", sensorType);
       params.set("limit", String(limit));
-      const data = await api<SensorReading[]>(`/api/iot/history?${params}`);
-      setReadings(data);
-    } catch {
-      // api() handles 401 redirect
-    }
+      setReadings(await api<SensorReading[]>(`/api/iot/history?${params}`));
+    } catch { /* api() handles 401 */ }
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchReadings();
-  }, [sensorType, limit]);
+  useEffect(() => { fetchReadings(); }, [sensorType, limit]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
       await api("/api/iot/refresh", { method: "POST" });
       await fetchReadings();
-    } catch {
-      // api() handles errors
-    }
+    } catch { /* */ }
     setRefreshing(false);
   };
 
-  const getUnit = (st: string) => UNIT_LABELS[st] ?? "";
+  const unit = (st: string) => UNIT_LABELS[st] ?? "";
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6 pt-8">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-[var(--color-text)]">Leituras dos Sensores</h1>
-          <p className="text-sm text-[var(--color-text-muted)]">Histórico de dados coletados pelos sensores IoT.</p>
-        </div>
-        <Button onClick={handleRefresh} disabled={refreshing}>
-          {refreshing ? "Atualizando..." : "Atualizar dados"}
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader title="Leituras dos Sensores" description="Histórico de dados coletados pelos sensores IoT.">
+        <Button onClick={handleRefresh} loading={refreshing} size="sm">
+          Atualizar dados
         </Button>
-      </div>
+      </PageHeader>
 
       <div className="flex flex-wrap gap-3">
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-[var(--color-text-muted)]">Sensor</label>
-          <select
-            value={sensorType}
-            onChange={(e) => setSensorType(e.target.value)}
-            className="rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none"
-          >
-            {SENSOR_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+          <label className="text-xs font-medium text-[var(--color-text-tertiary)] uppercase tracking-wider">Sensor</label>
+          <Select value={sensorType} onChange={(e) => setSensorType(e.target.value)} className="min-w-[200px]">
+            {SENSOR_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-[var(--color-text-muted)]">Limite</label>
-          <select
-            value={limit}
-            onChange={(e) => setLimit(Number(e.target.value))}
-            className="rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none"
-          >
+          <label className="text-xs font-medium text-[var(--color-text-tertiary)] uppercase tracking-wider">Limite</label>
+          <Select value={limit} onChange={(e) => setLimit(Number(e.target.value))} className="min-w-[100px]">
             <option value={20}>20</option>
             <option value={50}>50</option>
             <option value={100}>100</option>
             <option value={200}>200</option>
-          </select>
+          </Select>
         </div>
       </div>
 
-      <Card>
+      <Card padding="sm">
         {loading ? (
-          <p className="text-sm text-[var(--color-text-muted)]">Carregando...</p>
+          <PageLoading />
         ) : readings.length === 0 ? (
-          <p className="text-sm text-[var(--color-text-muted)]">
-            Nenhuma leitura encontrada. Clique em &quot;Atualizar dados&quot; para gerar leituras simuladas.
-          </p>
+          <div className="flex flex-col items-center gap-2 py-12">
+            <p className="text-sm text-[var(--color-text-tertiary)]">Nenhuma leitura encontrada.</p>
+            <Button variant="secondary" size="sm" onClick={handleRefresh}>
+              Gerar leituras simuladas
+            </Button>
+          </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[var(--color-border)] text-[var(--color-text-muted)]">
-                  <th className="pb-2 pr-4 font-medium">Data</th>
-                  <th className="pb-2 pr-4 font-medium">Sensor</th>
-                  <th className="pb-2 pr-4 font-medium">Valor</th>
-                  <th className="pb-2 pr-4 font-medium">Unidade</th>
-                  <th className="pb-2 font-medium">Origem</th>
+                <tr className="border-b border-[var(--color-border)] text-left">
+                  <th className="pb-3 pr-4 text-xs font-medium text-[var(--color-text-tertiary)] uppercase tracking-wider">Data</th>
+                  <th className="pb-3 pr-4 text-xs font-medium text-[var(--color-text-tertiary)] uppercase tracking-wider">Sensor</th>
+                  <th className="pb-3 pr-4 text-xs font-medium text-[var(--color-text-tertiary)] uppercase tracking-wider">Valor</th>
+                  <th className="pb-3 pr-4 text-xs font-medium text-[var(--color-text-tertiary)] uppercase tracking-wider">Unidade</th>
+                  <th className="pb-3 text-xs font-medium text-[var(--color-text-tertiary)] uppercase tracking-wider">Origem</th>
                 </tr>
               </thead>
               <tbody>
                 {readings.map((r) => (
                   <tr key={r.id} className="border-b border-[var(--color-border)] last:border-0">
-                    <td className="py-2 pr-4 text-[var(--color-text)] whitespace-nowrap">
+                    <td className="py-2.5 pr-4 whitespace-nowrap text-[var(--color-text)]">
                       {new Date(r.measuredAt).toLocaleString("pt-BR")}
                     </td>
-                    <td className="py-2 pr-4 text-[var(--color-text)]">
+                    <td className="py-2.5 pr-4 text-[var(--color-text)]">
                       {SENSOR_OPTIONS.find((o) => o.value === r.sensorType)?.label ?? r.sensorType}
                     </td>
-                    <td className="py-2 pr-4 font-medium text-[var(--color-text)]">{r.value}</td>
-                    <td className="py-2 pr-4 text-[var(--color-text-muted)]">{getUnit(r.sensorType)}</td>
-                    <td className="py-2 text-[var(--color-text-muted)] capitalize">{r.source}</td>
+                    <td className="py-2.5 pr-4 font-medium tabular-nums text-[var(--color-text)]">{r.value.toFixed(2)}</td>
+                    <td className="py-2.5 pr-4 text-[var(--color-text-tertiary)]">{unit(r.sensorType)}</td>
+                    <td className="py-2.5 text-[var(--color-text-tertiary)]">
+                      <Badge variant={r.source === "real" ? "info" : "neutral"}>{r.source}</Badge>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -165,9 +149,5 @@ function ReadingsContent() {
 }
 
 export default function ReadingsPage() {
-  return (
-    <AuthGuard>
-      <ReadingsContent />
-    </AuthGuard>
-  );
+  return <AuthGuard><ReadingsContent /></AuthGuard>;
 }

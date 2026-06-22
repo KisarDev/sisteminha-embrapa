@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { Card } from "@/src/components/ui/Card";
 import { Button } from "@/src/components/ui/Button";
 import { AlertBadge } from "@/src/components/dashboard/AlertBadge";
+import { Badge } from "@/src/components/ui/Badge";
+import { PageHeader } from "@/src/components/ui/PageHeader";
+import { PageLoading } from "@/src/components/ui/Loading";
 import { api } from "@/src/lib/api";
 import { AuthGuard } from "@/src/components/auth/AuthGuard";
 
@@ -32,11 +35,6 @@ type Alert = {
   createdAt: string;
 };
 
-type AlertsResponse = {
-  count: number;
-  data: Alert[];
-};
-
 function AlertsContent() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,22 +44,18 @@ function AlertsContent() {
   const fetchAlerts = async () => {
     setLoading(true);
     try {
-      const data = await api<AlertsResponse>("/api/alerts");
-      setAlerts(data.data || []);
-    } catch {
-      setError("Erro ao carregar alertas.");
-    }
+      const data = await api<{ data: Alert[] }>("/api/alerts");
+      setAlerts(data.data ?? []);
+    } catch { setError("Erro ao carregar alertas."); }
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchAlerts();
-  }, []);
+  useEffect(() => { fetchAlerts(); }, []);
 
   const handleResolve = async (id: string) => {
     setResolving(id);
     try {
-      await api<{ message: string }>(`/api/alerts/${id}`, { method: "PATCH" });
+      await api(`/api/alerts/${id}`, { method: "PATCH" });
       setAlerts((prev) => prev.filter((a) => a.id !== id));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao resolver alerta.");
@@ -70,57 +64,56 @@ function AlertsContent() {
   };
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-6 pt-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-[var(--color-text)]">Alertas</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-            {alerts.length} alerta{alerts.length !== 1 ? "s" : ""} ativo{alerts.length !== 1 ? "s" : ""}
-          </p>
-        </div>
-        <button
-          onClick={fetchAlerts}
-          className="text-sm text-[var(--color-primary)] underline transition hover:opacity-80"
-        >
+    <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader title="Alertas" description="Alertas gerados pelos sensores IoT.">
+        <Badge variant={alerts.length === 0 ? "success" : "warning"}>
+          {alerts.length} ativo{alerts.length !== 1 ? "s" : ""}
+        </Badge>
+        <Button variant="secondary" size="sm" onClick={fetchAlerts}>
           Atualizar
-        </button>
-      </div>
+        </Button>
+      </PageHeader>
 
       {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+        <div className="rounded-[var(--radius-md)] bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger)] border border-[var(--color-danger)]/20">
+          {error}
+        </div>
       )}
 
       {loading ? (
-        <p className="text-sm text-[var(--color-text-muted)]">Carregando...</p>
+        <PageLoading />
       ) : alerts.length === 0 ? (
         <Card>
-          <p className="text-sm text-[var(--color-text-muted)]">Nenhum alerta ativo no momento.</p>
+          <p className="py-4 text-center text-sm text-[var(--color-text-tertiary)]">
+            Nenhum alerta ativo no momento.
+          </p>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {alerts.map((alert) => (
-            <Card key={alert.id}>
-              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                <div className="space-y-2">
+            <Card key={alert.id} padding="sm">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-1.5">
                   <div className="flex items-center gap-2">
                     <AlertBadge severity={alert.severity} />
                     <span className="text-sm font-medium text-[var(--color-text)]">
                       {sensorLabels[alert.sensorType] || alert.sensorType}
                     </span>
                   </div>
-                  <p className="text-sm text-[var(--color-text)]">{alert.message}</p>
-                  <div className="flex gap-4 text-xs text-[var(--color-text-muted)]">
+                  <p className="text-sm text-[var(--color-text-secondary)]">{alert.message}</p>
+                  <div className="flex flex-wrap gap-3 text-xs text-[var(--color-text-tertiary)]">
                     <span>Valor: {alert.value.toFixed(2)}</span>
                     <span>Limite: {alert.threshold}</span>
                     <span>{new Date(alert.createdAt).toLocaleString("pt-BR")}</span>
                   </div>
                 </div>
                 <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => handleResolve(alert.id)}
-                  disabled={resolving === alert.id}
-                  className="shrink-0 !bg-green-700"
+                  loading={resolving === alert.id}
                 >
-                  {resolving === alert.id ? "..." : "Resolver"}
+                  Resolver
                 </Button>
               </div>
             </Card>
@@ -132,9 +125,5 @@ function AlertsContent() {
 }
 
 export default function AlertsPage() {
-  return (
-    <AuthGuard>
-      <AlertsContent />
-    </AuthGuard>
-  );
+  return <AuthGuard><AlertsContent /></AuthGuard>;
 }

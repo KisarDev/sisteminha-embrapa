@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Card } from "@/src/components/ui/Card";
 import { Button } from "@/src/components/ui/Button";
+import { AlertBanner } from "@/src/components/ui/AlertBanner";
+import { PageHeader } from "@/src/components/ui/PageHeader";
 import { api } from "@/src/lib/api";
 import { AuthGuard } from "@/src/components/auth/AuthGuard";
 
@@ -23,30 +25,21 @@ const SENSOR_TYPES = [
 function IotContent() {
   const [source, setSource] = useState<"simulation" | "real">("simulation");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-  const [result, setResult] = useState<{ count: number; message: string } | null>(null);
+  const [result, setResult] = useState<{ message: string } | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const toggleType = (type: string) => {
-    setSelectedTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-    );
+    setSelectedTypes((prev) => prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]);
   };
 
   const handleIngest = async () => {
-    setError("");
-    setResult(null);
-    setLoading(true);
-
+    setError(""); setResult(null); setLoading(true);
     const body: Record<string, unknown> = { source };
     if (selectedTypes.length > 0) body.sensorTypes = selectedTypes;
-
     try {
-      const data = await api<{ count: number; message?: string }>("/api/iot/ingest", {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
-      setResult({ count: data.count, message: `${data.count} leituras criadas.` });
+      const data = await api<{ count: number }>("/api/iot/ingest", { method: "POST", body: JSON.stringify(body) });
+      setResult({ message: `${data.count} leituras criadas.` });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro na ingestão.");
     }
@@ -54,68 +47,55 @@ function IotContent() {
   };
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6 pt-8">
-      <div>
-        <h1 className="text-2xl font-semibold text-[var(--color-text)]">Ingestão IoT</h1>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">Disparar leitura manual de sensores.</p>
-      </div>
+    <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader title="Ingestão IoT" description="Disparar leitura manual de sensores." />
 
-      {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {result && <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">{result.message}</p>}
+      {error && <AlertBanner variant="error">{error}</AlertBanner>}
+      {result && <AlertBanner variant="success">{result.message}</AlertBanner>}
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
-          <h2 className="mb-4 text-lg font-medium text-[var(--color-text)]">Configuração</h2>
-          <div className="flex flex-col gap-3">
+          <h2 className="mb-4 text-base font-semibold text-[var(--color-text)]">Configuração</h2>
+          <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-[var(--color-text)]">Fonte</label>
-              <div className="flex gap-3">
+              <span className="text-sm font-medium text-[var(--color-text)]">Fonte</span>
+              <div className="flex gap-4">
                 <label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
-                  <input type="radio" name="source" value="simulation" checked={source === "simulation"} onChange={() => setSource("simulation")} />
+                  <input type="radio" name="source" value="simulation" checked={source === "simulation"} onChange={() => setSource("simulation")}
+                    className="h-4 w-4 accent-[var(--color-primary)]" />
                   Simulação
                 </label>
                 <label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
-                  <input type="radio" name="source" value="real" checked={source === "real"} onChange={() => setSource("real")} />
+                  <input type="radio" name="source" value="real" checked={source === "real"} onChange={() => setSource("real")}
+                    className="h-4 w-4 accent-[var(--color-primary)]" />
                   Real
                 </label>
               </div>
             </div>
-
             <div className="flex flex-col gap-1.5">
               <span className="text-sm font-medium text-[var(--color-text)]">
-                Sensores <span className="text-[var(--color-text-muted)]">(deixe vazio para todos)</span>
+                Sensores <span className="text-[var(--color-text-tertiary)]">(vazio = todos)</span>
               </span>
-              <div className="max-h-48 space-y-1 overflow-y-auto rounded-md border border-[var(--color-border)] p-2">
+              <div className="max-h-48 space-y-1 overflow-y-auto rounded-[var(--radius-md)] border border-[var(--color-border)] p-2">
                 {SENSOR_TYPES.map((st) => (
-                  <label key={st.value} className="flex items-center gap-2 rounded px-2 py-1 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface)]">
-                    <input type="checkbox" checked={selectedTypes.includes(st.value)} onChange={() => toggleType(st.value)} />
+                  <label key={st.value} className="flex items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)] cursor-pointer">
+                    <input type="checkbox" checked={selectedTypes.includes(st.value)} onChange={() => toggleType(st.value)}
+                      className="h-4 w-4 rounded-[var(--radius-sm)] accent-[var(--color-primary)]" />
                     {st.label}
                   </label>
                 ))}
               </div>
             </div>
-
-            <Button onClick={handleIngest} disabled={loading}>
-              {loading ? "Ingerindo..." : "Executar ingestão"}
+            <Button onClick={handleIngest} loading={loading}>
+              Executar ingestão
             </Button>
           </div>
         </Card>
-
-        {result && (
-          <Card>
-            <h2 className="text-lg font-medium text-[var(--color-text)]">Resultado</h2>
-            <p className="mt-2 text-sm text-[var(--color-text-muted)]">{result.message}</p>
-          </Card>
-        )}
       </div>
     </main>
   );
 }
 
 export default function IotAdminPage() {
-  return (
-    <AuthGuard>
-      <IotContent />
-    </AuthGuard>
-  );
+  return <AuthGuard><IotContent /></AuthGuard>;
 }

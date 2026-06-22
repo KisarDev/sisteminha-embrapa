@@ -4,16 +4,14 @@ import { FormEvent, useEffect, useState } from "react";
 import { Card } from "@/src/components/ui/Card";
 import { Input } from "@/src/components/ui/Input";
 import { Button } from "@/src/components/ui/Button";
+import { Textarea } from "@/src/components/ui/Textarea";
+import { AlertBanner } from "@/src/components/ui/AlertBanner";
+import { PageHeader } from "@/src/components/ui/PageHeader";
+import { PageLoading } from "@/src/components/ui/Loading";
 import { api } from "@/src/lib/api";
 import { AuthGuard } from "@/src/components/auth/AuthGuard";
 
-type Doc = {
-  id: string;
-  title: string;
-  description: string;
-  slug: string;
-  createdAt: string;
-};
+type Doc = { id: string; title: string; description: string; slug: string; createdAt: string };
 
 function DocsContent() {
   const [docs, setDocs] = useState<Doc[]>([]);
@@ -25,32 +23,17 @@ function DocsContent() {
   const [submitting, setSubmitting] = useState(false);
 
   const fetchDocs = async () => {
-    try {
-      const data = await api<Doc[]>("/api/docs");
-      setDocs(data);
-    } catch {
-      // api() handles errors
-    }
+    try { setDocs(await api<Doc[]>("/api/docs")); } catch { /* */ }
     setLoading(false);
   };
-
-  useEffect(() => {
-    fetchDocs();
-  }, []);
+  useEffect(() => { fetchDocs(); }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError("");
-    setSubmitting(true);
-
+    setError(""); setSubmitting(true);
     try {
-      await api("/api/docs", {
-        method: "POST",
-        body: JSON.stringify({ title, description, content }),
-      });
-      setTitle("");
-      setDescription("");
-      setContent("");
+      await api("/api/docs", { method: "POST", body: JSON.stringify({ title, description, content }) });
+      setTitle(""); setDescription(""); setContent("");
       fetchDocs();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao criar documento.");
@@ -59,53 +42,43 @@ function DocsContent() {
   };
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6 pt-8">
-      <div>
-        <h1 className="text-2xl font-semibold text-[var(--color-text)]">Admin - Documentação</h1>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">Gerenciar páginas de documentação.</p>
-      </div>
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader title="Documentação" description="Gerenciar páginas de documentação." />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <h2 className="mb-4 text-lg font-medium text-[var(--color-text)]">Nova página</h2>
+          <h2 className="mb-4 text-base font-semibold text-[var(--color-text)]">Nova página</h2>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-
+            {error && <AlertBanner variant="error">{error}</AlertBanner>}
             <div className="flex flex-col gap-1.5">
               <label htmlFor="title" className="text-sm font-medium text-[var(--color-text)]">Título</label>
               <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
             </div>
             <div className="flex flex-col gap-1.5">
               <label htmlFor="description" className="text-sm font-medium text-[var(--color-text)]">Descrição</label>
-              <textarea id="description" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} required
-                className="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none" />
+              <Textarea id="description" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} required />
             </div>
             <div className="flex flex-col gap-1.5">
               <label htmlFor="content" className="text-sm font-medium text-[var(--color-text)]">Conteúdo</label>
-              <textarea id="content" rows={6} value={content} onChange={(e) => setContent(e.target.value)} required
-                className="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none" />
+              <Textarea id="content" rows={6} value={content} onChange={(e) => setContent(e.target.value)} required />
             </div>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? "Criando..." : "Criar página"}
-            </Button>
+            <Button type="submit" loading={submitting}>Criar página</Button>
           </form>
         </Card>
 
         <div className="flex flex-col gap-3">
-          <h2 className="text-lg font-medium text-[var(--color-text)]">Páginas existentes</h2>
-          {loading ? (
-            <p className="text-sm text-[var(--color-text-muted)]">Carregando...</p>
-          ) : docs.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-muted)]">Nenhuma página cadastrada.</p>
+          <h2 className="text-base font-semibold text-[var(--color-text)]">Páginas existentes</h2>
+          {loading ? <PageLoading /> : docs.length === 0 ? (
+            <Card><p className="py-4 text-center text-sm text-[var(--color-text-tertiary)]">Nenhuma página cadastrada.</p></Card>
           ) : (
             docs.map((doc) => (
-              <Card key={doc.id}>
-                <div>
+              <Card key={doc.id} padding="sm">
+                <div className="space-y-1">
                   <p className="text-sm font-medium text-[var(--color-text)]">{doc.title}</p>
-                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">{doc.slug}</p>
+                  <p className="text-xs text-[var(--color-text-tertiary)]">{doc.slug}</p>
                 </div>
-                <a href={`/docs/${doc.slug}`} target="_blank" className="mt-2 inline-block text-sm text-[var(--color-primary)] underline">
-                  Ver página
+                <a href={`/docs/${doc.slug}`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-xs font-medium text-[var(--color-primary)] hover:underline">
+                  Ver página →
                 </a>
               </Card>
             ))
@@ -117,9 +90,5 @@ function DocsContent() {
 }
 
 export default function AdminDocsPage() {
-  return (
-    <AuthGuard>
-      <DocsContent />
-    </AuthGuard>
-  );
+  return <AuthGuard><DocsContent /></AuthGuard>;
 }

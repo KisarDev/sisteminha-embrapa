@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { SensorType, UserRole } from "@prisma/client";
 import { container } from "@/src/core/di/container";
 import { handleHttpError } from "@/src/core/http/response";
 import { readSession } from "@/src/core/http/auth";

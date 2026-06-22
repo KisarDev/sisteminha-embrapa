@@ -7,41 +7,47 @@ type SensorCardProps = {
 };
 
 function formatValue(value: number | null) {
-  if (value === null) {
-    return "Sem dados";
-  }
-
-  return value.toFixed(2);
+  if (value === null) return "—";
+  return value.toFixed(1);
 }
 
 export function SensorCard({ title, stats }: SensorCardProps) {
+  const latestValue = stats.latest?.value ?? null;
+
   return (
-    <Card>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-[var(--color-text-muted)]">{title}</p>
-          <p className="mt-2 text-3xl font-semibold text-[var(--color-text)]">{formatValue(stats.latest?.value ?? null)}</p>
+    <Card padding="sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-[var(--color-text-tertiary)] uppercase tracking-wider truncate">
+            {title}
+          </p>
+          <p className="mt-1.5 text-2xl font-semibold tracking-tight text-[var(--color-text)]">
+            {formatValue(latestValue)}
+          </p>
         </div>
-        <div className="text-right text-xs text-[var(--color-text-muted)]">
-          <p>{stats.count} leituras</p>
-          <p>{stats.latest ? new Date(stats.latest.measuredAt).toLocaleString("pt-BR") : "Sem histórico"}</p>
+        <div className="shrink-0 text-right">
+          <p className="text-[11px] text-[var(--color-text-tertiary)]">{stats.count} leituras</p>
+          {stats.latest && (
+            <p className="mt-0.5 text-[11px] text-[var(--color-text-tertiary)]">
+              {new Date(stats.latest.measuredAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+            </p>
+          )}
         </div>
       </div>
-
-      <dl className="mt-4 grid grid-cols-3 gap-3 text-sm">
+      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[var(--color-border)] pt-3">
         <div>
-          <dt className="text-[var(--color-text-muted)]">Média</dt>
-          <dd className="font-medium text-[var(--color-text)]">{formatValue(stats.average)}</dd>
+          <dt className="text-[11px] text-[var(--color-text-tertiary)] uppercase tracking-wider">Média</dt>
+          <dd className="mt-0.5 text-sm font-medium text-[var(--color-text)]">{formatValue(stats.average)}</dd>
         </div>
         <div>
-          <dt className="text-[var(--color-text-muted)]">Mínima</dt>
-          <dd className="font-medium text-[var(--color-text)]">{formatValue(stats.minimum)}</dd>
+          <dt className="text-[11px] text-[var(--color-text-tertiary)] uppercase tracking-wider">Mín</dt>
+          <dd className="mt-0.5 text-sm font-medium text-[var(--color-text)]">{formatValue(stats.minimum)}</dd>
         </div>
         <div>
-          <dt className="text-[var(--color-text-muted)]">Máxima</dt>
-          <dd className="font-medium text-[var(--color-text)]">{formatValue(stats.maximum)}</dd>
+          <dt className="text-[11px] text-[var(--color-text-tertiary)] uppercase tracking-wider">Máx</dt>
+          <dd className="mt-0.5 text-sm font-medium text-[var(--color-text)]">{formatValue(stats.maximum)}</dd>
         </div>
-      </dl>
+      </div>
     </Card>
   );
 }

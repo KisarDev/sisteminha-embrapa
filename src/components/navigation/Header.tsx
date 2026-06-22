@@ -2,31 +2,40 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuthStore } from "@/src/store/authStore";
+import { Button } from "@/src/components/ui/Button";
 
 export function Header() {
   const pathname = usePathname();
   const { user, loading, initialized, fetchProfile, logout } = useAuthStore();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    if (!initialized) {
-      fetchProfile();
-    }
+    if (!initialized) fetchProfile();
   }, [initialized, fetchProfile]);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   const handleLogout = async () => {
     await logout();
     window.location.href = "/";
   };
 
-  const navLinks = [
-    { href: "/", label: "Início" },
+  const isActive = (href: string) =>
+    pathname === href || (href !== "/" && pathname.startsWith(href));
+
+  const navItems = [
     { href: "/dashboard", label: "Dashboard" },
+    { href: "/readings", label: "Leituras" },
+    { href: "/manual-records", label: "Registros" },
+    { href: "/alerts", label: "Alertas" },
+    { href: "/calculator", label: "Calculadora" },
   ];
 
-  const isAdmin = user?.role === "SUPER_ADMIN";
-  const adminLinks = [
+  const adminItems = [
     { href: "/admin/scheduler", label: "Scheduler" },
     { href: "/admin/iot", label: "IoT" },
     { href: "/admin/lessons", label: "Aulas" },
@@ -34,120 +43,108 @@ export function Header() {
     { href: "/admin/users", label: "Usuários" },
   ];
 
+  const isAdmin = user?.role === "SUPER_ADMIN";
+  const allNavItems = [...navItems, ...(isAdmin ? adminItems : [])];
+
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-white/95 backdrop-blur-sm">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-6">
-          <Link href="/" className="text-lg font-semibold text-[var(--color-text)]">
+    <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-8">
+          <Link
+            href="/"
+            className="flex items-center gap-2 py-3 text-base font-semibold text-[var(--color-text)] tracking-tight"
+          >
+            <span className="flex h-7 w-7 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--color-primary)] text-xs font-bold text-white">
+              S
+            </span>
             Sisteminha
           </Link>
-          <nav className="hidden items-center gap-4 md:flex">
-            {navLinks.map((link) => (
+
+          <nav className="hidden md:flex items-center gap-1">
+            {allNavItems.map((item) => (
               <Link
-                key={link.href}
-                href={link.href}
-                className={`text-sm transition hover:text-[var(--color-primary)] ${
-                  pathname === link.href ? "font-medium text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"
-                }`}
+                key={item.href}
+                href={item.href}
+                className={`
+                  px-3 py-1.5 rounded-[var(--radius-md)] text-sm font-medium transition-colors duration-150
+                  ${isActive(item.href)
+                    ? "bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
+                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
+                  }
+                `.trim()}
               >
-                {link.label}
+                {item.label}
               </Link>
             ))}
-            {isAdmin && (
-              <div className="relative group">
-                <span className="cursor-pointer text-sm text-[var(--color-text-muted)] transition hover:text-[var(--color-primary)]">
-                  Admin
-                </span>
-                <div className="absolute left-0 top-full mt-1 hidden w-40 rounded-md border border-[var(--color-border)] bg-white shadow-lg group-hover:block">
-                  {adminLinks.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className={`block px-3 py-2 text-sm transition hover:bg-[var(--color-surface)] ${
-                        pathname === link.href ? "font-medium text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"
-                      }`}
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
           </nav>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {loading ? (
-            <span className="text-sm text-[var(--color-text-muted)]">...</span>
+            <div className="h-5 w-5 animate-pulse rounded-full bg-[var(--color-border)]" />
           ) : user ? (
-            <>
+            <div className="flex items-center gap-2">
               <Link
                 href="/profile"
-                className={`text-sm transition hover:text-[var(--color-primary)] ${
-                  pathname === "/profile" ? "font-medium text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"
-                }`}
+                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[var(--radius-md)] text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] transition-colors duration-150"
               >
-                {user.name}
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-[10px] font-bold text-[var(--color-primary)]">
+                  {user.name.charAt(0).toUpperCase()}
+                </span>
+                <span className="hidden lg:inline">{user.name}</span>
               </Link>
-              <Link
-                href="/manual-records"
-                className={`text-sm transition hover:text-[var(--color-primary)] ${
-                  pathname === "/manual-records" ? "font-medium text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"
-                }`}
-              >
-                Registros
-              </Link>
-              <Link
-                href="/calculator"
-                className={`text-sm transition hover:text-[var(--color-primary)] ${
-                  pathname === "/calculator" ? "font-medium text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"
-                }`}
-              >
-                Calculadora
-              </Link>
-              <Link
-                href="/readings"
-                className={`text-sm transition hover:text-[var(--color-primary)] ${
-                  pathname === "/readings" ? "font-medium text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"
-                }`}
-              >
-                Leituras
-              </Link>
-              <Link
-                href="/alerts"
-                className={`text-sm transition hover:text-[var(--color-primary)] ${
-                  pathname === "/alerts" ? "font-medium text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"
-                }`}
-              >
-                Alertas
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="rounded-md bg-[var(--color-primary)] px-3 py-1.5 text-sm text-white transition hover:opacity-90"
-              >
+              <Button variant="ghost" size="sm" onClick={handleLogout}>
                 Sair
-              </button>
-            </>
+              </Button>
+            </div>
           ) : (
-            <>
-              <Link
-                href="/login"
-                className={`text-sm transition hover:text-[var(--color-primary)] ${
-                  pathname === "/login" ? "font-medium text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"
-                }`}
-              >
-                Entrar
+            <div className="flex items-center gap-2">
+              <Link href="/login">
+                <Button variant="ghost" size="sm">
+                  Entrar
+                </Button>
               </Link>
-              <Link
-                href="/register"
-                className="rounded-md bg-[var(--color-primary)] px-3 py-1.5 text-sm text-white transition hover:opacity-90"
-              >
-                Cadastro
+              <Link href="/register">
+                <Button size="sm">Cadastro</Button>
               </Link>
-            </>
+            </div>
           )}
+
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="ml-2 flex md:hidden h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] transition-colors"
+            aria-label="Abrir menu"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              {mobileOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
         </div>
       </div>
+
+      {mobileOpen && (
+        <nav className="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 pb-3 pt-2 md:hidden">
+          {allNavItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`
+                block rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium transition-colors duration-150
+                ${isActive(item.href)
+                  ? "bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
+                  : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]"
+                }
+              `.trim()}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      )}
     </header>
   );
 }

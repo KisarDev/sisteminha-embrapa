@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/src/components/ui/Button";
 
 export function RefreshDashboardButton() {
   const router = useRouter();
@@ -13,18 +14,14 @@ export function RefreshDashboardButton() {
       await fetch("/api/iot/refresh", { method: "POST" });
       router.refresh();
     } catch {
-      // Silently fail
+      // silencio
     }
     setLoading(false);
   };
 
   return (
-    <button
-      onClick={handleRefresh}
-      disabled={loading}
-      className="rounded-md bg-[var(--color-primary)] px-4 py-2 text-sm text-white transition hover:opacity-90 disabled:opacity-50"
-    >
-      {loading ? "Atualizando..." : "Atualizar dados"}
-    </button>
+    <Button variant="secondary" size="sm" onClick={handleRefresh} loading={loading}>
+      Atualizar dados
+    </Button>
   );
 }

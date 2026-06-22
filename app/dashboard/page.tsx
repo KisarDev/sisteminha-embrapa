@@ -1,8 +1,9 @@
-import Link from "next/link";
 import { SensorType } from "@prisma/client";
 import { AlertBadge } from "@/src/components/dashboard/AlertBadge";
 import { SensorCard } from "@/src/components/dashboard/SensorCard";
 import { Card } from "@/src/components/ui/Card";
+import { Badge } from "@/src/components/ui/Badge";
+import { PageHeader } from "@/src/components/ui/PageHeader";
 import { container } from "@/src/core/di/container";
 import { readSession } from "@/src/core/http/auth";
 import { redirect } from "next/navigation";
@@ -36,50 +37,49 @@ export default async function DashboardPage() {
   ]);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 p-6">
-      <section className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold text-[var(--color-text)]">Dashboard</h1>
-          <p className="text-[var(--color-text-muted)]">Resumo operacional dos sensores e alertas ativos do sisteminha.</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <RefreshDashboardButton />
-          <Link className="text-sm text-[var(--color-primary)] underline" href="/">
-            Início
-          </Link>
-        </div>
-      </section>
+    <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader title="Dashboard" description="Resumo operacional dos sensores do sisteminha.">
+        <RefreshDashboardButton />
+      </PageHeader>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {summary.sensors.map(({ sensorType, stats }) => (
           <SensorCard key={sensorType} title={sensorLabels[sensorType]} stats={stats} />
         ))}
       </section>
 
       <section>
-        <Card>
+        <Card padding="lg">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-xl font-medium text-[var(--color-text)]">Alertas ativos</h2>
-              <p className="text-sm text-[var(--color-text-muted)]">Alertas abertos gerados automaticamente nas leituras IoT.</p>
+              <h2 className="text-base font-semibold text-[var(--color-text)]">Alertas ativos</h2>
+              <p className="text-sm text-[var(--color-text-secondary)]">Gerados automaticamente nas leituras IoT.</p>
             </div>
-            <div className="text-sm font-medium text-[var(--color-text)]">{alerts.length} abertos</div>
+            <Badge variant={alerts.length === 0 ? "success" : "warning"}>
+              {alerts.length} aberto{alerts.length !== 1 ? "s" : ""}
+            </Badge>
           </div>
-
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 space-y-2">
             {alerts.length === 0 ? (
-              <p className="text-sm text-[var(--color-text-muted)]">Nenhum alerta ativo no momento.</p>
+              <p className="py-4 text-center text-sm text-[var(--color-text-tertiary)]">
+                Nenhum alerta ativo no momento.
+              </p>
             ) : (
               alerts.slice(0, 10).map((alert) => (
-                <div key={alert.id} className="flex flex-col gap-2 rounded-md border border-[var(--color-border)] p-3 md:flex-row md:items-start md:justify-between">
-                  <div>
+                <div
+                  key={alert.id}
+                  className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:flex-row sm:items-start sm:justify-between"
+                >
+                  <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
                       <AlertBadge severity={alert.severity} />
-                      <span className="text-sm font-medium text-[var(--color-text)]">{sensorLabels[alert.sensorType]}</span>
+                      <span className="text-sm font-medium text-[var(--color-text)]">
+                        {sensorLabels[alert.sensorType]}
+                      </span>
                     </div>
-                    <p className="mt-2 text-sm text-[var(--color-text)]">{alert.message}</p>
+                    <p className="text-sm text-[var(--color-text-secondary)]">{alert.message}</p>
                   </div>
-                  <div className="text-sm text-[var(--color-text-muted)]">
+                  <div className="shrink-0 text-xs text-[var(--color-text-tertiary)]">
                     {new Date(alert.createdAt).toLocaleString("pt-BR")}
                   </div>
                 </div>

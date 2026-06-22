@@ -2,41 +2,42 @@ import Link from "next/link";
 import { Card } from "@/src/components/ui/Card";
 
 const modules = [
-  { title: "Autenticação", description: "Cadastro, login, logout e perfil." },
-  { title: "IoT", description: "Leitura simulada/real via IIotProvider com histórico." },
-  { title: "Dashboard", description: "Resumo dos sensores com médias, mínimas, máximas e alertas ativos." },
-  { title: "Registros", description: "CRUD de registros manuais com soft delete." },
-  { title: "Calculator", description: "Escalonamento de produção extensível por cultura." },
-  { title: "CMS", description: "Aulas e documentação com rotas dinâmicas." },
+  { title: "Dashboard", description: "Resumo dos sensores com médias, mínimas, máximas e alertas ativos.", href: "/dashboard" },
+  { title: "Leituras IoT", description: "Histórico de dados coletados pelos sensores IoT em tempo real.", href: "/readings" },
+  { title: "Registros", description: "CRUD de registros manuais com busca, filtro e visualização em cards/tabela.", href: "/manual-records" },
+  { title: "Alertas", description: "Alertas gerados automaticamente por leituras fora dos thresholds.", href: "/alerts" },
+  { title: "Calculadora", description: "Escalonamento de produção extensível por cultura.", href: "/calculator" },
+  { title: "Aulas & Documentação", description: "CMS com aulas e documentação em rotas dinâmicas.", href: "/aulas/exemplo-aula" },
 ];
 
 export default function Home() {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 p-6">
-      <section className="space-y-2">
-        <h1 className="text-3xl font-semibold text-[var(--color-text)]">Sistema Inteligente para o Sisteminha Embrapa</h1>
-        <p className="text-[var(--color-text-muted)]">Base arquitetural em Next.js + MVC + Service Layer + Repository Pattern + DI.</p>
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-12 sm:px-6 lg:px-8">
+      <section className="space-y-3">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--color-primary)] text-lg font-bold text-white">
+            S
+          </span>
+          <div>
+            <h1 className="text-[1.75rem] font-semibold tracking-[-0.02em] text-[var(--color-text)]">
+              Sisteminha Embrapa
+            </h1>
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              Monitoramento IoT, registros e apoio à decisão para produtores.
+            </p>
+          </div>
+        </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2">
-        {modules.map((moduleItem) => (
-          <Card key={moduleItem.title}>
-            <h2 className="text-xl font-medium text-[var(--color-text)]">{moduleItem.title}</h2>
-            <p className="mt-2 text-[var(--color-text-muted)]">{moduleItem.description}</p>
-          </Card>
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {modules.map((mod) => (
+          <Link key={mod.title} href={mod.href} className="group block">
+            <Card className="h-full transition-all duration-200 group-hover:shadow-[var(--shadow-md)] group-hover:border-[var(--color-border-hover)]">
+              <h2 className="text-base font-semibold text-[var(--color-text)]">{mod.title}</h2>
+              <p className="mt-1.5 text-sm text-[var(--color-text-secondary)] leading-relaxed">{mod.description}</p>
+            </Card>
+          </Link>
         ))}
-      </section>
-
-      <section className="flex flex-wrap gap-4 text-sm">
-        <Link className="text-[var(--color-primary)] underline" href="/dashboard">
-          Dashboard operacional
-        </Link>
-        <Link className="text-[var(--color-primary)] underline" href="/aulas/exemplo-aula">
-          Exemplo de rota de aula
-        </Link>
-        <Link className="text-[var(--color-primary)] underline" href="/docs/exemplo-documentacao">
-          Exemplo de rota de documentação
-        </Link>
       </section>
     </main>
   );

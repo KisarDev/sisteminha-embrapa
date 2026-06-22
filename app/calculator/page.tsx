@@ -4,6 +4,9 @@ import { FormEvent, useState } from "react";
 import { Card } from "@/src/components/ui/Card";
 import { Input } from "@/src/components/ui/Input";
 import { Button } from "@/src/components/ui/Button";
+import { Select } from "@/src/components/ui/Select";
+import { AlertBanner } from "@/src/components/ui/AlertBanner";
+import { PageHeader } from "@/src/components/ui/PageHeader";
 import { api } from "@/src/lib/api";
 
 const CROPS = [
@@ -36,12 +39,10 @@ export default function CalculatorPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError("");
-    setResult(null);
+    setError(""); setResult(null);
     setLoading(true);
-
     try {
-      const data = await api<Result>("/api/calculator/production-scaling", {
+      setResult(await api<Result>("/api/calculator/production-scaling", {
         method: "POST",
         body: JSON.stringify({
           crop,
@@ -49,8 +50,7 @@ export default function CalculatorPage() {
           desiredQuantity: parseFloat(desiredQuantity),
           periodInDays: parseInt(periodInDays, 10),
         }),
-      });
-      setResult(data);
+      }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao calcular.");
     }
@@ -58,114 +58,63 @@ export default function CalculatorPage() {
   };
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6 pt-8">
-      <div>
-        <h1 className="text-2xl font-semibold text-[var(--color-text)]">Calculadora de Produção</h1>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-          Escalone sua produção com base no ciclo da cultura.
-        </p>
-      </div>
+    <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader title="Calculadora de Produção" description="Escalone sua produção com base no ciclo da cultura." />
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
-          <h2 className="mb-4 text-lg font-medium text-[var(--color-text)]">Parâmetros</h2>
+          <h2 className="mb-4 text-base font-semibold text-[var(--color-text)]">Parâmetros</h2>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {error && (
-              <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-            )}
-
+            {error && <AlertBanner variant="error">{error}</AlertBanner>}
             <div className="flex flex-col gap-1.5">
               <label htmlFor="crop" className="text-sm font-medium text-[var(--color-text)]">Cultura</label>
-              <select
-                id="crop"
-                value={crop}
-                onChange={(e) => setCrop(e.target.value)}
-                className="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none"
-              >
-                {CROPS.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </select>
+              <Select id="crop" value={crop} onChange={(e) => setCrop(e.target.value)}>
+                {CROPS.map((c) => (<option key={c.value} value={c.value}>{c.label}</option>))}
+              </Select>
             </div>
-
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="desiredProduction" className="text-sm font-medium text-[var(--color-text)]">
-                Produção desejada (kg)
-              </label>
-              <Input
-                id="desiredProduction"
-                type="number"
-                step="any"
-                placeholder="Ex: 100"
-                value={desiredProduction}
-                onChange={(e) => setDesiredProduction(e.target.value)}
-                required
-              />
+              <label htmlFor="desiredProduction" className="text-sm font-medium text-[var(--color-text)]">Produção desejada (kg)</label>
+              <Input id="desiredProduction" type="number" step="any" placeholder="Ex: 100" value={desiredProduction} onChange={(e) => setDesiredProduction(e.target.value)} required />
             </div>
-
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="desiredQuantity" className="text-sm font-medium text-[var(--color-text)]">
-                Quantidade desejada (unidades)
-              </label>
-              <Input
-                id="desiredQuantity"
-                type="number"
-                step="any"
-                placeholder="Ex: 50"
-                value={desiredQuantity}
-                onChange={(e) => setDesiredQuantity(e.target.value)}
-                required
-              />
+              <label htmlFor="desiredQuantity" className="text-sm font-medium text-[var(--color-text)]">Quantidade desejada (unidades)</label>
+              <Input id="desiredQuantity" type="number" step="any" placeholder="Ex: 50" value={desiredQuantity} onChange={(e) => setDesiredQuantity(e.target.value)} required />
             </div>
-
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="periodInDays" className="text-sm font-medium text-[var(--color-text)]">
-                Período (dias)
-              </label>
-              <Input
-                id="periodInDays"
-                type="number"
-                placeholder="Ex: 365"
-                value={periodInDays}
-                onChange={(e) => setPeriodInDays(e.target.value)}
-                required
-              />
+              <label htmlFor="periodInDays" className="text-sm font-medium text-[var(--color-text)]">Período (dias)</label>
+              <Input id="periodInDays" type="number" placeholder="Ex: 365" value={periodInDays} onChange={(e) => setPeriodInDays(e.target.value)} required />
             </div>
-
-            <Button type="submit" disabled={loading}>
-              {loading ? "Calculando..." : "Calcular"}
-            </Button>
+            <Button type="submit" loading={loading}>Calcular</Button>
           </form>
         </Card>
 
         {result && (
           <div className="flex flex-col gap-3">
             <Card>
-              <h3 className="text-lg font-medium text-[var(--color-text)]">
+              <h3 className="text-base font-semibold text-[var(--color-text)]">
                 {CROPS.find((c) => c.value === result.crop)?.label || result.crop}
               </h3>
               <dl className="mt-4 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-[var(--color-text-muted)]">Plantios necessários</dt>
+                <div className="flex justify-between border-b border-[var(--color-border)] pb-2">
+                  <dt className="text-[var(--color-text-secondary)]">Plantios necessários</dt>
                   <dd className="font-medium text-[var(--color-text)]">{result.plantingCount}</dd>
                 </div>
-                <div className="flex justify-between">
-                  <dt className="text-[var(--color-text-muted)]">Sementes estimadas</dt>
-                  <dd className="font-medium text-[var(--color-text)]">{result.estimatedSeedAmount}</dd>
+                <div className="flex justify-between border-b border-[var(--color-border)] pb-2">
+                  <dt className="text-[var(--color-text-secondary)]">Sementes estimadas</dt>
+                  <dd className="font-medium text-[var(--color-text)] tabular-nums">{result.estimatedSeedAmount}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-[var(--color-text-muted)]">Colheita estimada (kg)</dt>
-                  <dd className="font-medium text-[var(--color-text)]">{result.estimatedHarvest}</dd>
+                  <dt className="text-[var(--color-text-secondary)]">Colheita estimada (kg)</dt>
+                  <dd className="font-medium text-[var(--color-text)] tabular-nums">{result.estimatedHarvest}</dd>
                 </div>
               </dl>
             </Card>
-
             <Card>
-              <h4 className="text-sm font-medium text-[var(--color-text)]">Cronograma</h4>
-              <div className="mt-3 space-y-2">
+              <h4 className="text-sm font-semibold text-[var(--color-text)]">Cronograma</h4>
+              <div className="mt-3 space-y-1.5">
                 {result.schedule.map((s, i) => (
-                  <div key={i} className="flex justify-between rounded-md bg-[var(--color-surface)] px-3 py-2 text-sm">
-                    <span className="text-[var(--color-text-muted)]">Plantio dia {s.plantingDay}</span>
+                  <div key={i} className="flex items-center justify-between rounded-[var(--radius-md)] bg-[var(--color-bg)] px-3 py-2 text-sm">
+                    <span className="text-[var(--color-text-secondary)]">Plantio dia {s.plantingDay}</span>
                     <span className="font-medium text-[var(--color-text)]">Colheita dia {s.expectedHarvestDay}</span>
                   </div>
                 ))}
